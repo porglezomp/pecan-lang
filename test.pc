@@ -1,0 +1,7 @@
+function main(argc : int, argv : string []) -> int {
+  if (argc < 2) {
+    print("you need to pass an argument");
+  } else {
+    print(argv[1]);
+  }
+}
