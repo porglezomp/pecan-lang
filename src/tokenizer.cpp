@@ -2,8 +2,10 @@
 
 #include "tokenizer.hpp"
 
+// #include <functional>
+// #include <string>
+// #include <memory>
 #include <sstream>
-#include <string>
 #include <cctype>
 #include <set>
 
@@ -22,6 +24,22 @@ std::set<char> operator_characters = {
 
 char Tokenizer::peek_char() { return current_char; }
 std::shared_ptr<Token> Tokenizer::peek() { return current_token; }
+
+char Tokenizer::take_char()
+{
+  char tmp = peek_char();
+  advance_char();
+  return tmp;
+}
+
+std::string Tokenizer::take_char_while(std::function<bool (char)> predicate)
+{
+  std::string result = "";
+  while (predicate(peek_char()) && !input.eof()) {
+    result += take_char();
+  }
+  return result;
+}
 
 void Tokenizer::advance_char()
 {
@@ -54,44 +72,34 @@ void Tokenizer::advance()
     }
   }
 
-  if (isalpha(peek_char()) || peek_char() == '_') {  // [_a-zA-Z][_a-zA-Z0-9]+
-    std::string ident = "";
-    while (isalnum(peek_char()) || peek_char() == '_') {
-      ident += peek_char();
-      advance_char();
-    }
-    if (keywords.find(ident) != keywords.end())
+  if (isalpha(peek_char()) || peek_char() == '_') {  // [_a-zA-Z][_a-zA-Z0-9]*
+    std::string ident = take_char_while([] (char c) {
+	return isalnum(c) || c == '_';
+      });
+
+    if (keywords.find(ident) != keywords.end()) {
       current_token = std::make_shared<KeywordToken>(line, col, ident);
-    else
+    } else {
       current_token = std::make_shared<IdentToken>(line, col, ident);
-  } else if (isdigit(peek_char())) {  // [0-9]+ (. [0-9]*)?
-    std::string num = "";
-    while (isdigit(peek_char())) {
-      num += peek_char();
-      advance_char();
+    }
+  } else if (isdigit(peek_char())) {  // [0-9]+(. [0-9]*)?
+    std::string num = take_char_while(isdigit);
+    if (peek_char() == '.') {
+      num += take_char();
+      num += take_char_while(isdigit);
     }
 
-    if (peek_char() == '.') {
-      num += '.';
-      advance_char();
-      while (isdigit(peek_char())) {
-	num += peek_char();
-	advance_char();
-      }
-    }
     current_token = std::make_shared<NumToken>(line, col, num);
   } else {
-    std::string op = "";
-    while (operator_characters.find(peek_char()) != operator_characters.end()) {
-      op += peek_char();
-      advance_char();
-    }
+    auto is_operator_character = [] (char c) {
+	return operator_characters.find(c) != operator_characters.end(); };
+    std::string op = take_char_while(is_operator_character);
 
     if (op != "") {
       current_token = std::make_shared<OperatorToken>(line, col, op);
       if (op == "//") {
-	while (peek_char() != '\n') advance_char();
-	advance();
+	while (peek_char() != '\n') { advance_char(); }  // consume the line
+	advance();  // Get the next real token
       }
     } else {
       current_token = std::make_shared<CharToken>(line, col, peek_char());

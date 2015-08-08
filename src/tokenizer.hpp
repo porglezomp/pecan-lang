@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <memory>
+#include <functional>
 
 #include "token/all_tokens.hpp"
 
@@ -14,6 +15,8 @@ class Tokenizer {
 
   void advance_char();
   char peek_char();
+  char take_char();
+  std::string take_char_while(std::function<bool (char)> predicate);
 
 public:
   void advance();

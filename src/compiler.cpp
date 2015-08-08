@@ -14,8 +14,9 @@ int main(int argc, char **argv)
   std::ifstream file(ifname);
   auto tokenizer = Tokenizer(file);
   while (tokenizer.peek()->type != EOFTOKEN) {
-    std::cout << tokenizer.peek()->show() << std::endl;
+    std::cout << tokenizer.peek()->show() << " ";
     tokenizer.advance();
   }
+  std::cout << std::endl;
 }
 
