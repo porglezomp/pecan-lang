@@ -1,7 +1,27 @@
+// Let's test out a comment!
 function main(argc : int, argv : string []) -> int {
   if (argc < 2) {
     print("you need to pass an argument");
-  } else {
+  } else {  // This comment is in a line!
     print(argv[1]);
   }
+}
+
+// We need to perform an operator stress test
+// Let's test the two-character operators
+
+function test_it_out() -> bool {
+  var x = 0;
+  if ((true == false) != true) {
+    x += 1;
+  }
+  x *= 10;
+  x /= 2;
+  if (x <= 100) {
+    x -= 100;
+    assert(x >= 0);
+  } else {
+    return false;
+  }
+  return true;
 }
