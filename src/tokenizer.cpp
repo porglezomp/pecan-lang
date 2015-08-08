@@ -9,14 +9,9 @@
 
 #include "token/all_tokens.hpp"
 
-std::set<std::string> operators = {
-  "+", "=", "-", "*", "/", "%", "->", "<", ">",
-  "<=", ">=", "==", "!=", "+=", "-=", "*=", "/=",
-  "//", // Comment operator kludge
-};
-
-std::set<char> operator_prefixes = {
-  '-', '<', '>', '=', '!', '+', '-', '*', '/',
+std::set<char> operator_characters = {
+  '+', '-', '*', '/', '=', '<', '>', '!', '%', '$',
+  '?', ':', '#', '@', '&', '|', '^', '\\', '.'
 };
 
 void Tokenizer::advance_char()
@@ -55,16 +50,14 @@ void Tokenizer::advance()
     }
   }
 
-  if (isalpha(peek_char()) || peek_char() == '_') {
-    // [_a-zA-Z][_a-zA-Z0-9]+
+  if (isalpha(peek_char()) || peek_char() == '_') {  // [_a-zA-Z][_a-zA-Z0-9]+
     std::string ident = "";
     while (isalnum(peek_char()) || peek_char() == '_') {
       ident += peek_char();
       advance_char();
     } 
     current_token = std::make_shared<IdentToken>(line, col, ident);
-  } else if (isdigit(peek_char())) {
-    // [0-9]+ (. [0-9]*)?
+  } else if (isdigit(peek_char())) {  // [0-9]+ (. [0-9]*)?
     std::string num = "";
     while (isdigit(peek_char())) {
       num += peek_char();
@@ -81,28 +74,21 @@ void Tokenizer::advance()
     }
     current_token = std::make_shared<NumToken>(line, col, num);
   } else {
-    current_token = std::make_shared<CharToken>(line, col, peek_char());
-
     std::string op = "";
-    char first_char = peek_char();
-    op += first_char;
-    advance_char();
-    if (operator_prefixes.find(first_char) != operator_prefixes.end()) {
-      std::string attempt_op = op;
-      attempt_op += peek_char();
-      if (operators.find(attempt_op) != operators.end()) {
-	op = attempt_op;
-	advance_char();
-      }
+    while (operator_characters.find(peek_char()) != operator_characters.end()) {
+      op += peek_char();
+      advance_char();
     }
 
-    if (operators.find(op) != operators.end()) {
+    if (op != "") {
       current_token = std::make_shared<OperatorToken>(line, col, op);
-    }
-
-    if (op == "//") {
-      while (peek_char() != '\n') advance_char();
-      advance();
+      if (op == "//") {
+	while (peek_char() != '\n') advance_char();
+	advance();
+      }
+    } else {
+      current_token = std::make_shared<CharToken>(line, col, peek_char());
+      advance_char();
     }
   }
 }
