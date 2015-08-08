@@ -1,6 +1,6 @@
 // Copyright 2015 Caleb Jones
 
-#include "tokenizer.hpp"
+#include "lexer.hpp"
 
 // #include <functional>
 // #include <string>
@@ -22,17 +22,17 @@ std::set<char> operator_characters = {
   '?', ':', '#', '@', '&', '|', '^', '\\', '.'
 };
 
-char Tokenizer::peek_char() { return current_char; }
-std::shared_ptr<Token> Tokenizer::peek() { return current_token; }
+char Lexer::peek_char() { return current_char; }
+std::shared_ptr<Token> Lexer::peek() { return current_token; }
 
-char Tokenizer::take_char()
+char Lexer::take_char()
 {
   char tmp = peek_char();
   advance_char();
   return tmp;
 }
 
-std::string Tokenizer::take_char_while(std::function<bool (char)> predicate)
+std::string Lexer::take_char_while(std::function<bool (char)> predicate)
 {
   std::string result = "";
   while (predicate(peek_char()) && !input.eof()) {
@@ -41,7 +41,7 @@ std::string Tokenizer::take_char_while(std::function<bool (char)> predicate)
   return result;
 }
 
-void Tokenizer::advance_char()
+void Lexer::advance_char()
 {
   if (input.eof()) return;
   if (current_char == '\n') {
@@ -52,7 +52,7 @@ void Tokenizer::advance_char()
   current_char = input.get();
 }
 
-void Tokenizer::advance()
+void Lexer::advance()
 {
   // Return if we're already at EOF
   if (current_token && current_token->type == EOFTOKEN) return;

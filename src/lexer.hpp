@@ -1,5 +1,5 @@
-#ifndef PECAN_TOKENIZER_HPP_INCLUDED
-#define PECAN_TOKENIZER_HPP_INCLUDED
+#ifndef PECAN_LEXER_HPP_INCLUDED
+#define PECAN_LEXER_HPP_INCLUDED
 
 #include <iostream>
 #include <memory>
@@ -7,7 +7,7 @@
 
 #include "token/all_tokens.hpp"
 
-class Tokenizer {
+class Lexer {
   std::istream &input;
   int line = 0, col = 0;
   char current_char = '\n';
@@ -22,7 +22,7 @@ public:
   void advance();
   std::shared_ptr<Token> peek();
 
-  Tokenizer(std::istream &in) : input(in) {
+  Lexer(std::istream &in) : input(in) {
     advance_char();
     advance();
   }

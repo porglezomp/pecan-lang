@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "tokenizer.hpp"
+#include "lexer.hpp"
 
 int main(int argc, char **argv)
 {
@@ -12,10 +12,10 @@ int main(int argc, char **argv)
   
   char *ifname = argv[1];
   std::ifstream file(ifname);
-  auto tokenizer = Tokenizer(file);
-  while (tokenizer.peek()->type != EOFTOKEN) {
-    std::cout << tokenizer.peek()->show() << " ";
-    tokenizer.advance();
+  auto lexer = Lexer(file);
+  while (lexer.peek()->type != EOFTOKEN) {
+    std::cout << lexer.peek()->show() << " ";
+    lexer.advance();
   }
   std::cout << std::endl;
 }
