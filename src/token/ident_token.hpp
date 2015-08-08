@@ -8,9 +8,10 @@
 class IdentToken : public Token {
   const std::string value;
 public:
-  const TokenType type = IDENTIFIER;
+  virtual std::string show();
   IdentToken(int line, int col, std::string value)
-    : Token(line, col), value(value) { }
+    : Token(line, col, IDENTIFIER), value(value) { }
+
   virtual ~IdentToken() { }
 };
 

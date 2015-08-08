@@ -1,6 +1,7 @@
 CXX = g++
 LIBS =
-NODEPS = -std=c++11 -Wall -Wextra -Werror -I. -flto
+LDFLAGS = -flto
+NODEPS = -std=c++11 -Wall -Wextra -Werror -g -I. -gdwarf-3
 # Use -MMD to generate dependencies
 CFLAGS = $(NODEPS) -MMD
 ODIR = build
@@ -14,7 +15,7 @@ $(shell mkdir -p $(DIRS))
 
 all: $(BIN)
 $(BIN): $(OBJS)
-	$(CXX) -o $(BIN) $(OBJS) $(LIBS) $(CFLAGS)
+	$(CXX) -o $(BIN) $(OBJS) $(LIBS) $(CFLAGS) $(LDFLAGS)
 
 $(ODIR)/%.o: src/%.cpp
 	$(CXX) -o $@ $< -c $(CFLAGS)

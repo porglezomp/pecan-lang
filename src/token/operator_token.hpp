@@ -8,9 +8,10 @@
 class OperatorToken : public Token {
   const std::string value;
 public:
-  const TokenType type = OPERATOR;
+  virtual std::string show();
   OperatorToken(int line, int col, std::string value)
-    : Token(line, col), value(value) { }
+    : Token(line, col, OPERATOR), value(value) { }
+
   virtual ~OperatorToken() { }
 };
 

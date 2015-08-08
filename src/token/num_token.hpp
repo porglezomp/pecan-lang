@@ -12,9 +12,10 @@ public:
   double doubleValue();
   int64_t signedValue();
   uint64_t unsignedValue();
-  const TokenType type = NUMERIC;
+  virtual std::string show();
   NumToken(int line, int col, std::string value)
-    : Token(line, col), value(value) { }
+    : Token(line, col, NUMERIC), value(value) { }
+
   virtual ~NumToken() { }
 };
 

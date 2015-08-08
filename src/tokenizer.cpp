@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <cctype>
+#include <set>
 
 #include "token/all_tokens.hpp"
 
@@ -26,21 +27,34 @@ char Tokenizer::peek_char()
 
 void Tokenizer::advance()
 {
+  // Return if we're already at EOF
+  if (current_token && current_token->type == EOFTOKEN) return;
+  // Or if we just got to EOF
+  if (input.eof()) {
+    current_token = std::make_shared<EOFToken>(line, col);
+    return;
+  }
+  
+  // Skip over whitespace
   while (isspace(peek_char())) {
     advance_char();
+    // If we hit EOF, then stop trying to advance
     if (input.eof()) {
-      current_token = std::make_shared<Token>(EOFToken(line, col));
+      current_token = std::make_shared<EOFToken>(line, col);
       return;
     }
   }
+
   if (isalpha(peek_char()) || peek_char() == '_') {
+    // [_a-zA-Z][_a-zA-Z0-9]+
     std::string ident = "";
     while (isalnum(peek_char()) || peek_char() == '_') {
       ident += peek_char();
       advance_char();
     } 
-    current_token = std::make_shared<Token>(IdentToken(line, col, ident));
+    current_token = std::make_shared<IdentToken>(line, col, ident);
   } else if (isdigit(peek_char())) {
+    // [0-9]+ (. [0-9]*)?
     std::string num = "";
     while (isdigit(peek_char())) {
       num += peek_char();
@@ -55,9 +69,10 @@ void Tokenizer::advance()
 	advance_char();
       }
     }
-    current_token = std::make_shared<Token>(NumToken(line, col, num));
+    current_token = std::make_shared<NumToken>(line, col, num);
   } else {
-    current_token = std::make_shared<Token>(CharToken(line, col, peek_char()));
+    current_token = std::make_shared<CharToken>(line, col, peek_char());
+    advance_char();
   }
 }
 

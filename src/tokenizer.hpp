@@ -10,7 +10,7 @@ class Tokenizer {
   std::istream &input;
   int line = 0, col = 0;
   char current_char = '\n';
-  std::shared_ptr<Token> current_token;
+  std::shared_ptr<Token> current_token = nullptr;
 
   void advance_char();
   char peek_char();

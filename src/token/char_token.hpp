@@ -8,9 +8,10 @@
 class CharToken : public Token {
   char value;
 public:
-  const TokenType type = CHARACTER;
+  virtual std::string show();
   CharToken(int line, int col, char value)
-    : Token(line, col), value(value) { }
+    : Token(line, col, CHARACTER), value(value) { }
+
   virtual ~CharToken() { }
 };
 

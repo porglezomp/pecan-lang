@@ -5,8 +5,9 @@
 
 class EOFToken : public Token {
 public:
-  const TokenType type = EOFTOKEN;
-  EOFToken(int line, int col) : Token(line, col) { }
+  virtual std::string show();
+  EOFToken(int line, int col) : Token(line, col, EOFTOKEN) { }
+
   virtual ~EOFToken() { }
 };
 
