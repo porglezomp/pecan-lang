@@ -9,10 +9,19 @@
 
 #include "token/all_tokens.hpp"
 
+std::set<std::string> keywords = {
+  "if", "else", "while", "for", "switch", "case",
+  "default", "return", "break", "continue",
+  "function", "let", "var",
+};
+
 std::set<char> operator_characters = {
   '+', '-', '*', '/', '=', '<', '>', '!', '%', '$',
   '?', ':', '#', '@', '&', '|', '^', '\\', '.'
 };
+
+char Tokenizer::peek_char() { return current_char; }
+std::shared_ptr<Token> Tokenizer::peek() { return current_token; }
 
 void Tokenizer::advance_char()
 {
@@ -25,11 +34,6 @@ void Tokenizer::advance_char()
   current_char = input.get();
 }
 
-char Tokenizer::peek_char()
-{
-  return current_char;
-}
-
 void Tokenizer::advance()
 {
   // Return if we're already at EOF
@@ -39,7 +43,7 @@ void Tokenizer::advance()
     current_token = std::make_shared<EOFToken>(line, col);
     return;
   }
-  
+
   // Skip over whitespace
   while (isspace(peek_char())) {
     advance_char();
@@ -55,8 +59,11 @@ void Tokenizer::advance()
     while (isalnum(peek_char()) || peek_char() == '_') {
       ident += peek_char();
       advance_char();
-    } 
-    current_token = std::make_shared<IdentToken>(line, col, ident);
+    }
+    if (keywords.find(ident) != keywords.end())
+      current_token = std::make_shared<KeywordToken>(line, col, ident);
+    else
+      current_token = std::make_shared<IdentToken>(line, col, ident);
   } else if (isdigit(peek_char())) {  // [0-9]+ (. [0-9]*)?
     std::string num = "";
     while (isdigit(peek_char())) {
@@ -91,10 +98,5 @@ void Tokenizer::advance()
       advance_char();
     }
   }
-}
-
-std::shared_ptr<Token> Tokenizer::peek()
-{
-  return current_token;
 }
 

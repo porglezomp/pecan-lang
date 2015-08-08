@@ -3,8 +3,6 @@
 
 #include "token.hpp"
 
-#include <string>
-
 class IdentToken : public Token {
   const std::string value;
 public:

@@ -3,8 +3,6 @@
 
 #include "token.hpp"
 
-#include <string>
-
 class CharToken : public Token {
   char value;
 public:

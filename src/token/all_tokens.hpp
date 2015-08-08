@@ -7,5 +7,6 @@
 #include "char_token.hpp"
 #include "num_token.hpp"
 #include "eof_token.hpp"
+#include "keyword_token.hpp"
 
 #endif

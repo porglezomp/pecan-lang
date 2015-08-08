@@ -3,8 +3,6 @@
 
 #include "token.hpp"
 
-#include <string>
-
 class OperatorToken : public Token {
   const std::string value;
 public:

@@ -4,7 +4,6 @@
 #include "token.hpp"
 
 #include <cstdint>
-#include <string>
 
 class NumToken : public Token {
   std::string value;
