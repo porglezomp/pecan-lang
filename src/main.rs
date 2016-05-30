@@ -22,6 +22,7 @@ enum Ast<'a> {
     Let { name: &'a [u8], ty: Type, expr: Expr<'a> },
     IfElse { cond: Expr<'a>, then: Vec<Ast<'a>>, else_: Option<Vec<Ast<'a>>> },
     Function { name: &'a [u8], args: Vec<(&'a [u8], Type)>, ret: Type, body: Vec<Ast<'a>> },
+    Return(Option<Expr<'a>>),
     Expr(Expr<'a>),
 }
 
@@ -94,13 +95,27 @@ named!(function<Ast>,
          char!('{') ~ multispace? ~
          body: many0!(statement) ~ multispace? ~
          char!('}') ,
-         || Ast::Function { name: name, args: args, ret: ret, body: body }
-       )
+         || Ast::Function { name: name, args: args, ret: ret, body: body })
+);
+
+named!(return_<Ast>,
+  chain!(tag!("return") ~
+         expr: complete!(preceded!(multispace, expr))? ~
+         multispace? ~ char!(';'),
+         || Ast::Return(expr))
 );
 
 named!(expr_statement<Ast>, chain!(expr: expr ~ multispace? ~ char!(';'), || Ast::Expr(expr)));
 
-named!(statement<Ast>, terminated!(alt_complete!(let_ | if_else | function | expr_statement), opt!(multispace)));
+named!(statement<Ast>,
+  terminated!(alt_complete!(let_
+                            | if_else
+                            | function
+                            | return_
+                            | expr_statement
+                            ),
+              opt!(multispace))
+);
 
 fn main() {
     println!("Hello, world!");
@@ -119,6 +134,14 @@ fn test_parse_expr() {
     assert_eq!(expr(b"hello"), parse_done(Expr::Name(&b"hello"[..])));
 
     assert_eq!(statement(b"42;"), parse_done(Ast::Expr(Expr::Num(42))));
+}
+
+#[test]
+fn test_parse_return() {
+    assert_eq!(return_(b"return;"), parse_done(Ast::Return(None)));
+    assert_eq!(return_(b"return 42;"), parse_done(Ast::Return(Some(Expr::Num(42)))));
+    assert_eq!(return_(b"return foo;"), parse_done(Ast::Return(Some(Expr::Name(&b"foo"[..])))));
+    assert_eq!(statement(b"return;"), parse_done(Ast::Return(None)));
 }
 
 #[test]
@@ -215,6 +238,17 @@ fn test_parse_function() {
             then: vec![Ast::Let { name: &b"a"[..], ty: Type::I32, expr: Expr::Num(1) }],
             else_: Some(vec![Ast::Let { name: &b"b"[..], ty: Type::I32, expr: Expr::Num(2) }]),
         }],
+    };
+    assert_eq!(res, parse_done(ast));
+
+    let res = function(b"fn identity(x: I32) -> I32 { return x; }");
+    let ast = Ast::Function {
+        name: &b"identity"[..],
+        args: vec![(&b"x"[..], Type::I32)],
+        ret: Type::I32,
+        body: vec![
+            Ast::Return(Some(Expr::Name(&b"x"[..]))),
+        ],
     };
     assert_eq!(res, parse_done(ast));
 }
