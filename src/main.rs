@@ -12,16 +12,17 @@ enum Type {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-enum Expr {
+enum Expr<'a> {
     Num(i32),
+    Name(&'a [u8]),
 }
 
 #[derive(Debug, PartialEq, Eq)]
 enum Ast<'a> {
-    Let { name: &'a [u8], ty: Type, expr: Expr },
-    IfElse { cond: Expr, then: Vec<Ast<'a>>, else_: Option<Vec<Ast<'a>>> },
+    Let { name: &'a [u8], ty: Type, expr: Expr<'a> },
+    IfElse { cond: Expr<'a>, then: Vec<Ast<'a>>, else_: Option<Vec<Ast<'a>>> },
     Function { name: &'a [u8], args: Vec<(&'a [u8], Type)>, ret: Type, body: Vec<Ast<'a>> },
-    Expr(Expr),
+    Expr(Expr<'a>),
 }
 
 named!(ident,
@@ -34,7 +35,10 @@ named!(type_<Type>,
        tag!("()")  => { |_| Type::Unit })
 );
 
-named!(expr<Expr>, alt_complete!(number));
+named!(expr<Expr>,
+  alt_complete!(number |
+                ident => { |name| Expr::Name(name) })
+);
 
 named!(number<Expr>,
   map_res!(map_res!(digit, str::from_utf8),
@@ -111,6 +115,8 @@ fn parse_done<O>(item: O) -> IResult<&'static [u8], O> {
 fn test_parse_expr() {
     assert_eq!(expr(b"123"), parse_done(Expr::Num(123)));
     assert_eq!(expr(b"001"), parse_done(Expr::Num(1)));
+
+    assert_eq!(expr(b"hello"), parse_done(Expr::Name(&b"hello"[..])));
 
     assert_eq!(statement(b"42;"), parse_done(Ast::Expr(Expr::Num(42))));
 }
