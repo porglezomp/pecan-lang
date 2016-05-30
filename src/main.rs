@@ -26,6 +26,7 @@ enum Ast<'a> {
     Function { name: &'a [u8], args: Vec<(&'a [u8], Type)>, ret: Type, body: Vec<Ast<'a>> },
     Return(Option<Expr<'a>>),
     Expr(Expr<'a>),
+    For { name: &'a [u8], ty: Type, over: Expr<'a>, body: Vec<Ast<'a>> },
 }
 
 named!(ident,
@@ -61,7 +62,7 @@ named!(parens<Expr>,
 
 named!(binop<Expr>,
   chain!(lhs: primary_expr ~ multispace? ~
-         op: recognize!(many1!(one_of!("+-<>=*/%&|"))) ~ multispace? ~
+         op: recognize!(many1!(one_of!("+-<>=*/%&|.:"))) ~ multispace? ~
          rhs: primary_expr ,
          || Expr::Binop { lhs: Box::new(lhs), op: op, rhs: Box::new(rhs) }
        )
@@ -140,13 +141,27 @@ named!(return_<Ast>,
          || Ast::Return(expr))
 );
 
+named!(for_<Ast>,
+  chain!(tag!("for") ~ multispace ~
+         name: ident ~ multispace? ~
+         char!(':') ~ multispace? ~
+         ty: type_ ~ multispace? ~
+         tag!("in") ~ multispace ~
+         over: expr ~ multispace? ~
+         char!('{') ~ multispace? ~
+         body: many0!(statement) ~ multispace? ~
+         char!('}') ,
+         || Ast::For { name: name, ty: ty, over: over, body: body })
+);
+
 named!(expr_statement<Ast>, chain!(expr: expr ~ multispace? ~ char!(';'), || Ast::Expr(expr)));
 
 named!(statement<Ast>,
   terminated!(alt_complete!(let_
                             | if_else
-                            | function
                             | return_
+                            | for_
+                            | function
                             | expr_statement
                             ),
               opt!(multispace))
@@ -413,6 +428,42 @@ fn test_parse_function() {
                     },
                 ]),
             },
+        ],
+    };
+    assert_eq!(res, parse_done(ast));
+}
+
+#[test]
+fn test_parse_loop() {
+    let res = for_(b"for i: I32 in 0..10 {}");
+    let ast = Ast::For {
+        name: &b"i"[..],
+        ty: Type::I32,
+        over: Expr::Binop {
+            lhs: Box::new(Expr::Num(0)),
+            op: &b".."[..],
+            rhs: Box::new(Expr::Num(10)),
+        },
+        body: vec![],
+    };
+    assert_eq!(res, parse_done(ast));
+
+    let res = for_(b"for i: I32 in range(10) { x += i; }");
+    let ast = Ast::For {
+        name: &b"i"[..],
+        ty: Type::I32,
+        over: Expr::Call {
+            name: &b"range"[..],
+            args: vec![
+                Expr::Num(10),
+            ],
+        },
+        body: vec![
+            Ast::Expr(Expr::Binop {
+                lhs: Box::new(Expr::Name(&b"x"[..])),
+                op: &b"+="[..],
+                rhs: Box::new(Expr::Name(&b"i"[..])),
+            }),
         ],
     };
     assert_eq!(res, parse_done(ast));
