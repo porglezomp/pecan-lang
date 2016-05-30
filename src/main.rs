@@ -21,6 +21,7 @@ enum Ast<'a> {
     Let { name: &'a [u8], ty: Type, expr: Expr },
     IfElse { cond: Expr, then: Vec<Ast<'a>>, else_: Option<Vec<Ast<'a>>> },
     Function { name: &'a [u8], args: Vec<(&'a [u8], Type)>, ret: Type, body: Vec<Ast<'a>> },
+    Expr(Expr),
 }
 
 named!(ident,
@@ -37,7 +38,7 @@ named!(expr<Expr>, alt_complete!(number));
 
 named!(number<Expr>,
   map_res!(map_res!(digit, str::from_utf8),
-           |x: &str| { x.parse::<i32>().map(|x| Expr::Num(x)) })
+           |x: &str| x.parse::<i32>().map(|x| Expr::Num(x)))
 );
 
 named!(let_<Ast>,
@@ -48,7 +49,7 @@ named!(let_<Ast>,
          char!('=')  ~ multispace? ~
          expr: expr  ~ multispace? ~
          char!(';')  ~ multispace? ,
-         || { Ast::Let { name: name, ty: ty, expr: expr } })
+         || Ast::Let { name: name, ty: ty, expr: expr })
 );
 
 named!(if_else<Ast>,
@@ -66,7 +67,7 @@ named!(if_else<Ast>,
                     value: many0!(statement) ~ multispace? ~
                     char!('}') ~ multispace? ,
                     || { value }))) ,
-         || { Ast::IfElse { cond: cond, then: then, else_: else_ } })
+         || Ast::IfElse { cond: cond, then: then, else_: else_ })
 );
 
 named!(typed_ident<(&[u8], Type)>,
@@ -89,11 +90,13 @@ named!(function<Ast>,
          char!('{') ~ multispace? ~
          body: many0!(statement) ~ multispace? ~
          char!('}') ,
-         || { Ast::Function { name: name, args: args, ret: ret, body: body } }
+         || Ast::Function { name: name, args: args, ret: ret, body: body }
        )
 );
 
-named!(statement<Ast>, terminated!(alt_complete!(let_ | if_else | function), opt!(multispace)));
+named!(expr_statement<Ast>, chain!(expr: expr ~ multispace? ~ char!(';'), || Ast::Expr(expr)));
+
+named!(statement<Ast>, terminated!(alt_complete!(let_ | if_else | function | expr_statement), opt!(multispace)));
 
 fn main() {
     println!("Hello, world!");
@@ -105,15 +108,20 @@ fn parse_done<O>(item: O) -> IResult<&'static [u8], O> {
 }
 
 #[test]
+fn test_parse_expr() {
+    assert_eq!(expr(b"123"), parse_done(Expr::Num(123)));
+    assert_eq!(expr(b"001"), parse_done(Expr::Num(1)));
+
+    assert_eq!(statement(b"42;"), parse_done(Ast::Expr(Expr::Num(42))));
+}
+
+#[test]
 fn test_parse_let() {
     let ident = ident(b"foo");
     assert_eq!(ident, parse_done(&b"foo"[..]));
 
     let ty = type_(b"I32");
     assert_eq!(ty, parse_done(Type::I32));
-
-    let num = expr(b"123");
-    assert_eq!(num, parse_done(Expr::Num(123)));
 
     let res = let_(b"let foo : I32 = 123;");
     let ast = Ast::Let {
