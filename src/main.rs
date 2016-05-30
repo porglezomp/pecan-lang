@@ -16,6 +16,7 @@ enum Expr<'a> {
     Num(i32),
     Name(&'a [u8]),
     Binop { lhs: Box<Expr<'a>>, op: &'a [u8], rhs: Box<Expr<'a>> },
+    Call { name: &'a [u8], args: Vec<Expr<'a>> },
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -43,6 +44,14 @@ named!(number<Expr>,
                 |x: &str| x.parse::<i32>().map(|x| Expr::Num(x)))
 );
 
+named!(call<Expr>,
+       chain!(name: ident ~ multispace? ~
+              char!('(') ~ multispace? ~
+              args: separated_list!(space_comma, expr) ~ space_comma? ~
+              char!(')') ,
+              || Expr::Call { name: name, args: args })
+);
+
 named!(binop<Expr>,
   chain!(lhs: primary_expr ~ multispace? ~
          op: recognize!(many1!(one_of!("+-<>=*/%&|"))) ~ multispace? ~
@@ -53,6 +62,7 @@ named!(binop<Expr>,
 
 named!(primary_expr<Expr>,
   alt_complete!(number
+                | call
                 | ident => { |name| Expr::Name(name) }
                 )
 );
@@ -155,6 +165,29 @@ fn test_parse_expr() {
         lhs: Box::new(Expr::Num(1)),
         op: &b"+"[..],
         rhs: Box::new(Expr::Num(2)),
+    };
+    assert_eq!(res, parse_done(ast));
+
+    let res = expr(b"foo(1)");
+    let ast = Expr::Call {
+        name: &b"foo"[..],
+        args: vec![
+            Expr::Num(1),
+        ],
+    };
+    assert_eq!(res, parse_done(ast));
+
+    let res = expr(b"f(f(x))");
+    let ast = Expr::Call {
+        name: &b"f"[..],
+        args: vec![
+            Expr::Call {
+                name: &b"f"[..],
+                args: vec![
+                    Expr::Name(&b"x"[..]),
+                ],
+            },
+        ],
     };
     assert_eq!(res, parse_done(ast));
 
@@ -273,6 +306,71 @@ fn test_parse_function() {
         ret: Type::I32,
         body: vec![
             Ast::Return(Some(Expr::Name(&b"x"[..]))),
+        ],
+    };
+    assert_eq!(res, parse_done(ast));
+
+    let res = function(b"fn fib(n: I32) -> I32 {
+  if (n <= 0) {
+    return 0;
+  } else {
+    if (n == 1) {
+      return 1;
+    } else {
+      return fib(n - 1) + fib(n - 2);
+    }
+  }
+}");
+    let ast = Ast::Function {
+        name: &b"fib"[..],
+        args: vec![(&b"n"[..], Type::I32)],
+        ret: Type::I32,
+        body: vec![
+            Ast::IfElse {
+                cond: Expr::Binop {
+                    lhs: Box::new(Expr::Name(&b"n"[..])),
+                    op: &b"<="[..],
+                    rhs: Box::new(Expr::Num(0)),
+                },
+                then: vec![Ast::Return(Some(Expr::Num(0)))],
+                else_: Some(vec![
+                    Ast::IfElse {
+                        cond: Expr::Binop {
+                            lhs: Box::new(Expr::Name(&b"n"[..])),
+                            op: &b"=="[..],
+                            rhs: Box::new(Expr::Num(1)),
+                        },
+                        then: vec![Ast::Return(Some(Expr::Num(1)))],
+                        else_: Some(vec![
+                            Ast::Return(Some(
+                                Expr::Binop {
+                                    lhs: Box::new(Expr::Call {
+                                        name: &b"fib"[..],
+                                        args: vec![
+                                            Expr::Binop {
+                                                lhs: Box::new(Expr::Name(&b"n"[..])),
+                                                op: &b"-"[..],
+                                                rhs: Box::new(Expr::Num(1)),
+                                            },
+                                        ],
+                                    }),
+                                    op: &b"+"[..],
+                                    rhs: Box::new(Expr::Call {
+                                        name: &b"fib"[..],
+                                        args: vec![
+                                            Expr::Binop {
+                                                lhs: Box::new(Expr::Name(&b"n"[..])),
+                                                op: &b"-"[..],
+                                                rhs: Box::new(Expr::Num(2)),
+                                            },
+                                        ],
+                                    }),
+                                }
+                            )),
+                        ]),
+                    },
+                ]),
+            },
         ],
     };
     assert_eq!(res, parse_done(ast));
