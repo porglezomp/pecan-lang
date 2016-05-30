@@ -52,6 +52,13 @@ named!(call<Expr>,
               || Expr::Call { name: name, args: args })
 );
 
+named!(parens<Expr>,
+  chain!(char!('(') ~ multispace? ~
+         expr: expr ~ multispace? ~
+         char!(')') ~ multispace? ,
+         || expr)
+);
+
 named!(binop<Expr>,
   chain!(lhs: primary_expr ~ multispace? ~
          op: recognize!(many1!(one_of!("+-<>=*/%&|"))) ~ multispace? ~
@@ -64,6 +71,7 @@ named!(primary_expr<Expr>,
   alt_complete!(number
                 | call
                 | ident => { |name| Expr::Name(name) }
+                | parens
                 )
 );
 
@@ -188,6 +196,40 @@ fn test_parse_expr() {
                 ],
             },
         ],
+    };
+    assert_eq!(res, parse_done(ast));
+
+    let res = expr(b"1 + (2 * 3)");
+    let ast = Expr::Binop {
+        lhs: Box::new(Expr::Num(1)),
+        op: &b"+"[..],
+        rhs: Box::new(Expr::Binop {
+            lhs: Box::new(Expr::Num(2)),
+            op: &b"*"[..],
+            rhs: Box::new(Expr::Num(3)),
+        }),
+    };
+    assert_eq!(res, parse_done(ast));
+
+    let res = expr(b"(a + b) * (foo() + bar())");
+    let ast = Expr::Binop {
+        lhs: Box::new(Expr::Binop {
+            lhs: Box::new(Expr::Name(&b"a"[..])),
+            op: &b"+"[..],
+            rhs: Box::new(Expr::Name(&b"b"[..])),
+        }),
+        op: &b"*"[..],
+        rhs: Box::new(Expr::Binop {
+            lhs: Box::new(Expr::Call {
+                name: &b"foo"[..],
+                args: vec![],
+            }),
+            op: &b"+"[..],
+            rhs: Box::new(Expr::Call {
+                name: &b"bar"[..],
+                args: vec![],
+            }),
+        }),
     };
     assert_eq!(res, parse_done(ast));
 
