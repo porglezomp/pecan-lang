@@ -168,7 +168,17 @@ named!(statement<Ast>,
 );
 
 fn main() {
-    println!("Hello, world!");
+    let ast = function(b"fn fib(n: I32) -> I32 {
+  let a: I32 = 0;
+  let b: I32 = 1;
+  for i: I32 in 0..n {
+    let c: I32 = b;
+    b = (a + b);
+    a = c;
+  }
+  return a;
+}");
+    println!("{:?}", ast);
 }
 
 #[cfg(test)]
