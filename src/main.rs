@@ -15,6 +15,7 @@ enum Type {
 enum Expr<'a> {
     Num(i32),
     Name(&'a [u8]),
+    Binop { lhs: Box<Expr<'a>>, op: &'a [u8], rhs: Box<Expr<'a>> },
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -28,22 +29,38 @@ enum Ast<'a> {
 
 named!(ident,
   recognize!(
-      pair!(alt!(alpha | tag!("_")),
-            many0!(alt!(alphanumeric | tag!("_"))))));
+    pair!(alt!(alpha | tag!("_")),
+          many0!(alt!(alphanumeric | tag!("_")))))
+);
 
 named!(type_<Type>,
   alt!(tag!("I32") => { |_| Type::I32 } |
        tag!("()")  => { |_| Type::Unit })
 );
 
-named!(expr<Expr>,
-  alt_complete!(number |
-                ident => { |name| Expr::Name(name) })
+named!(number<Expr>,
+       map_res!(map_res!(digit, str::from_utf8),
+                |x: &str| x.parse::<i32>().map(|x| Expr::Num(x)))
 );
 
-named!(number<Expr>,
-  map_res!(map_res!(digit, str::from_utf8),
-           |x: &str| x.parse::<i32>().map(|x| Expr::Num(x)))
+named!(binop<Expr>,
+  chain!(lhs: primary_expr ~ multispace? ~
+         op: recognize!(many1!(one_of!("+-<>=*/%&|"))) ~ multispace? ~
+         rhs: primary_expr ,
+         || Expr::Binop { lhs: Box::new(lhs), op: op, rhs: Box::new(rhs) }
+       )
+);
+
+named!(primary_expr<Expr>,
+  alt_complete!(number
+                | ident => { |name| Expr::Name(name) }
+                )
+);
+
+named!(expr<Expr>,
+  alt_complete!(binop
+                | primary_expr
+                )
 );
 
 named!(let_<Ast>,
@@ -132,6 +149,14 @@ fn test_parse_expr() {
     assert_eq!(expr(b"001"), parse_done(Expr::Num(1)));
 
     assert_eq!(expr(b"hello"), parse_done(Expr::Name(&b"hello"[..])));
+
+    let res = expr(b"1 + 2");
+    let ast = Expr::Binop {
+        lhs: Box::new(Expr::Num(1)),
+        op: &b"+"[..],
+        rhs: Box::new(Expr::Num(2)),
+    };
+    assert_eq!(res, parse_done(ast));
 
     assert_eq!(statement(b"42;"), parse_done(Ast::Expr(Expr::Num(42))));
 }
