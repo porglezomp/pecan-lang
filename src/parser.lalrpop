@@ -1,0 +1,11 @@
+use std::str::FromStr;
+
+grammar;
+
+pub Ident: &'input str = {r"[_a-zA-Z][_a-zA-Z0-9]*[!?]?"};
+pub Number: i64 = {
+    r"0b[01]+" => i64::from_str_radix(&<>[2..], 2).unwrap(),
+    r"0o[0-7]+" => i64::from_str_radix(&<>[2..], 8).unwrap(),
+    r"0x[0-9A-Fa-f]+" => i64::from_str_radix(&<>[2..], 16).unwrap(),
+    r"[0-9]+" => i64::from_str(<>).unwrap(),
+};
