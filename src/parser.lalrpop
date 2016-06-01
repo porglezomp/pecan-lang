@@ -3,15 +3,114 @@ use ast::{Ast, Expr, Operator};
 
 grammar;
 
+Comma<X>: Vec<X> = {
+    <v:(<X> ",")*> <e:X?> => match e {
+        None => v,
+        Some(e) => {
+            let mut v = v;
+            v.push(e);
+            v
+        }
+    }
+};
+
 pub Statement: Ast<'input> = {
     <l:Primary> <op:Assignment> <r:Expr> ";" => Ast::Assign { lhs: l, op: op, rhs: r },
 };
 
 pub Expr: Expr<'input> = {
+    Or
+};
+
+Or: Expr<'input> = {
+    <l:Or> "or" <r:And> => Expr::make_binop(l, Operator::Or, r),
+    And,
+};
+
+And: Expr<'input> = {
+    <l:And> "and" <r:Equality> => Expr::make_binop(l, Operator::And, r),
+    Equality,
+};
+
+Equality: Expr<'input> = {
+    Equality EqualOp Relation => Expr::make_binop(<>),
+    Relation,
+};
+
+EqualOp: Operator = {
+    "==" => Equal,
+    "!=" => NotEqual,
+};
+
+Relation: Expr<'input> = {
+    Relation RelOp Shift => Expr::make_binop(<>),
+    Shift,
+};
+
+RelOp: Operator = {
+    "<" => LT,
+    ">" => GT,
+    "<=" => LTE,
+    ">=" => GTE,
+};
+
+Shift: Expr<'input> = {
+    Shift ShiftOp Sum => Expr::make_binop(<>),
+    Sum,
+};
+
+ShiftOp: Operator = {
+    "<<" => ShiftLeft,
+    ">>" => ShiftRight,
+};
+
+Sum: Expr<'input> = {
+    Sum SumOp Product => Expr::make_binop(<>),
+    Product,
+};
+
+SumOp: Operator = {
+    "+" => Add,
+    "-" => Sub,
+};
+
+Product: Expr<'input> = {
+    Product ProductOp Unary => Expr::make_binop(<>),
+    Unary,
+};
+
+ProductOp: Operator = {
+    "*" => Mul,
+    "/" => Div,
+    "%" => Mod,
+};
+
+Unary: Expr<'input> = {
+    UnaryOp Unary => Expr::make_unop(<>),
+    Connection,
+};
+
+UnaryOp: Operator = {
+    "not" => Not,
+    "~" => BitNot,
+    "*" => Deref,
+    "&" => Address,
+};
+
+Connection: Expr<'input> = {
+    <obj:Connection> "." <item:Ident> => Expr::GetItem { obj: Box::new(obj), item: item },
+    <obj:Connection> "->" <item:Ident> => Expr::GetItem { obj: Box::new(Expr::make_unop(Deref, obj)), item: item },
+    <obj:Connection> "[" <idx:Expr> "]" => Expr::Subscript { obj: Box::new(obj), idx: Box::new(idx) },
+    Call,
     Primary,
 };
 
+pub Call: Expr<'input> = {
+    <func:Connection> "(" <args:Comma<Expr>> ")" => Expr::Call { func: Box::new(func), args: args },
+};
+
 pub Primary: Expr<'input> = {
+    "(" <Expr> ")",
     Ident => Expr::Ident(<>),
     Number => Expr::Int(<>),
 };

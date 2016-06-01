@@ -76,3 +76,94 @@ fn test_parse_assignment() {
                    rhs: Expr::Ident("b"),
                });
 }
+
+#[test]
+fn test_parse_expressions() {
+    use parser::parse_Expr;
+    use ast::{Expr, Operator};
+    assert_eq!(parse_Expr("1 + 1 * 2 == 3").unwrap(),
+               Expr::make_binop(
+                   Expr::make_binop(
+                       Expr::Int(1),
+                       Operator::Add,
+                       Expr::make_binop(
+                           Expr::Int(1),
+                           Operator::Mul,
+                           Expr::Int(2)
+                       )
+                   ),
+                   Operator::Equal,
+                   Expr::Int(3)
+               ));
+    assert_eq!(parse_Expr("hello(42)[1 + 1]->world.bar().baz + 2*5").unwrap(),
+               Expr::make_binop(
+                   Expr::GetItem {
+                       obj: Box::new(Expr::Call {
+                           func: Box::new(Expr::GetItem {
+                               obj: Box::new(Expr::GetItem {
+                                   obj: Box::new(Expr::make_unop (
+                                       Operator::Deref,
+                                       Expr::Subscript {
+                                           obj: Box::new(Expr::Call {
+                                               func: Box::new(Expr::Ident("hello")),
+                                               args: vec![
+                                                   Expr::Int(42),
+                                               ],
+                                           }),
+                                           idx: Box::new(Expr::make_binop (
+                                               Expr::Int(1),
+                                               Operator::Add,
+                                               Expr::Int(1),
+                                           )),
+                                       }
+                                   )),
+                                   item: "world",
+                               }),
+                               item: "bar",
+                           }),
+                           args: vec![],
+                       }),
+                       item: "baz",
+                   },
+                   Operator::Add,
+                   Expr::make_binop(
+                       Expr::Int(2),
+                       Operator::Mul,
+                       Expr::Int(5)
+                   )
+               ));
+    assert_eq!(parse_Expr("2 < 3 == 5 >= 3 and (1 == 2 and 1 or a != b)").unwrap(),
+               Expr::make_binop(
+                   Expr::make_binop(
+                       Expr::make_binop(
+                           Expr::Int(2),
+                           Operator::LT,
+                           Expr::Int(3)
+                       ),
+                       Operator::Equal,
+                       Expr::make_binop(
+                           Expr::Int(5),
+                           Operator::GTE,
+                           Expr::Int(3)
+                       )
+                   ),
+                   Operator::And,
+                   Expr::make_binop(
+                       Expr::make_binop(
+                           Expr::make_binop(
+                               Expr::Int(1),
+                               Operator::Equal,
+                               Expr::Int(2)
+                           ),
+                           Operator::And,
+                           Expr::Int(1)
+                       ),
+                       Operator::Or,
+                       Expr::make_binop(
+                           Expr::Ident("a"),
+                           Operator::NotEqual,
+                           Expr::Ident("b")
+                       )
+                   )
+               ));
+}
