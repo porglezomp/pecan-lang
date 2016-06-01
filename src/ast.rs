@@ -95,6 +95,10 @@ pub enum Ast<'a> {
         over: Expr<'a>,
         block: Vec<Ast<'a>>,
     },
+    While {
+        cond: Expr<'a>,
+        block: Vec<Ast<'a>>,
+    },
 }
 
 #[derive(PartialEq, Eq, Debug)]

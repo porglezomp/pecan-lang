@@ -7,11 +7,11 @@ fn main() {
 
 #[test]
 fn test_parse_ident() {
-    use parser::{parse_Ident, parse_Primary};
+    use parser::{parse_Ident, parse_Expr};
     use ast::Expr;
     macro_rules! test_parse {
         ($expr:expr) => {
-            assert_eq!(parse_Primary($expr).unwrap(), Expr::Ident($expr));
+            assert_eq!(parse_Expr($expr).unwrap(), Expr::Ident($expr));
             assert_eq!(parse_Ident($expr).unwrap(), $expr);
         }
     }
@@ -31,11 +31,11 @@ fn test_parse_ident() {
 
 #[test]
 fn test_parse_int() {
-    use parser::{parse_Number, parse_Primary};
+    use parser::{parse_Number, parse_Expr};
     use ast::Expr;
     macro_rules! test_parse {
         ($expr:expr) => {
-            assert_eq!(parse_Primary(stringify!($expr)).unwrap(), Expr::Int($expr));
+            assert_eq!(parse_Expr(stringify!($expr)).unwrap(), Expr::Int($expr));
             assert_eq!(parse_Number(stringify!($expr)).unwrap(), $expr);
         }
     }
@@ -193,4 +193,13 @@ fn test_parse_for() {
     // TODO: Write more thorough tests
     assert!(parse_Statement("for i: I64 in 0..64 { }").is_ok());
     assert!(parse_Statement("for x: I64 in items(hi) { print(x); }").is_ok());
+}
+
+#[test]
+fn test_parse_while() {
+    use parser::{parse_Statement, parse_Block};
+
+    // TODO: Write more thorough tests
+    assert!(parse_Statement("while (True) { }").is_ok());
+    assert!(parse_Block("{ let i: I64 = 0; while (i < 10) { i += 1; } }").is_ok());
 }

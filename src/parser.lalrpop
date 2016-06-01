@@ -20,6 +20,7 @@ pub Statement: Ast<'input> = {
     IfElse,
     <Expr> ";" => Ast::Expr(<>),
     For,
+    While,
 };
 
 Assignment: Ast<'input> = {
@@ -27,7 +28,7 @@ Assignment: Ast<'input> = {
 };
 
 use ast::Operator::*;
-pub AssignmentOp: Operator = {
+AssignmentOp: Operator = {
     "=" => Assign,
     "+=" => AddAssign,
     "-=" => SubAssign,
@@ -61,13 +62,17 @@ IfElse: Ast<'input> = {
         Ast::IfElse { cond: cond, then: then, else_: Some(else_) },
 };
 
-Block: Vec<Ast<'input>> = {
+pub Block: Vec<Ast<'input>> = {
     "{" <Statement*> "}"
 };
 
 For: Ast<'input> = {
     "for" <var:Ident> ":" <ty:Type> "in" <over:Expr> <block:Block> =>
         Ast::For { var: var, ty: ty, over: over, block: block },
+};
+
+While: Ast<'input> = {
+    "while" "(" <cond:Expr> ")" <block:Block> => Ast::While { cond: cond, block: block },
 };
 
 pub Expr: Expr<'input> = {
@@ -166,7 +171,7 @@ pub Call: Expr<'input> = {
     <func:Connection> "(" <args:Comma<Expr>> ")" => Expr::Call { func: Box::new(func), args: args },
 };
 
-pub Primary: Expr<'input> = {
+Primary: Expr<'input> = {
     "(" <Expr> ")",
     Ident => Expr::Ident(<>),
     Number => Expr::Int(<>),
