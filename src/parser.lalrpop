@@ -19,6 +19,7 @@ pub Statement: Ast<'input> = {
     Assignment,
     IfElse,
     <Expr> ";" => Ast::Expr(<>),
+    For,
 };
 
 Assignment: Ast<'input> = {
@@ -64,6 +65,11 @@ Block: Vec<Ast<'input>> = {
     "{" <Statement*> "}"
 };
 
+For: Ast<'input> = {
+    "for" <var:Ident> ":" <ty:Type> "in" <over:Expr> <block:Block> =>
+        Ast::For { var: var, ty: ty, over: over, block: block },
+};
+
 pub Expr: Expr<'input> = {
     Or
 };
@@ -89,8 +95,8 @@ EqualOp: Operator = {
 };
 
 Relation: Expr<'input> = {
-    Relation RelOp Shift => Expr::make_binop(<>),
-    Shift,
+    Relation RelOp Range => Expr::make_binop(<>),
+    Range,
 };
 
 RelOp: Operator = {
@@ -98,6 +104,11 @@ RelOp: Operator = {
     ">" => GT,
     "<=" => LTE,
     ">=" => GTE,
+};
+
+Range: Expr<'input> = {
+    <l:Shift> ".." <r:Shift> => Expr::make_binop(l, Operator::Range, r),
+    Shift,
 };
 
 Shift: Expr<'input> = {

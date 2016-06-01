@@ -30,6 +30,7 @@ pub enum Operator {
     Mul,
     Div,
     Mod,
+    Range,
 }
 
 #[derive(PartialEq, Debug)]
@@ -87,7 +88,13 @@ pub enum Ast<'a> {
         cond: Expr<'a>,
         then: Vec<Ast<'a>>,
         else_: Option<Vec<Ast<'a>>>,
-    }
+    },
+    For {
+        var: &'a str,
+        ty: Type,
+        over: Expr<'a>,
+        block: Vec<Ast<'a>>,
+    },
 }
 
 #[derive(PartialEq, Eq, Debug)]

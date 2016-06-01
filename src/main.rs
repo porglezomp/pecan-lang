@@ -185,3 +185,12 @@ fn test_parse_if_else() {
     assert!(parse_Statement("if (1 == 1) { a; } else { b; }").is_ok());
     assert!(parse_Statement("if (1 < 2) { print(42); } else if (2 < 1) { print(1); }").is_ok());
 }
+
+#[test]
+fn test_parse_for() {
+    use parser::parse_Statement;
+
+    // TODO: Write more thorough tests
+    assert!(parse_Statement("for i: I64 in 0..64 { }").is_ok());
+    assert!(parse_Statement("for x: I64 in items(hi) { print(x); }").is_ok());
+}
