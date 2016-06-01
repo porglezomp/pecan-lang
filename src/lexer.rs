@@ -167,6 +167,27 @@ impl<'a> Iterator for Lexer<'a> {
             }
         }
 
+        macro_rules! lex_tree {
+            ($($char:expr => $res:expr),+ ; default $last:expr) => {
+                {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        $(Some($char) => $res),+,
+                        _ => return Some($last),
+                    }
+                }
+            }
+        }
+
+        macro_rules! compound_assignment {
+            ($compound:expr, $plain:expr) => {
+                lex_tree! {
+                    '=' => advance_return!($compound);
+                    default $plain
+                }
+            }
+        }
+
         loop {
             match self.chars.peek() {
                 Some('0') => {
@@ -220,112 +241,34 @@ impl<'a> Iterator for Lexer<'a> {
                 Some('{') => advance_return!(Token::OpenCurly),
                 Some('}') => advance_return!(Token::CloseCurly),
                 Some('~') => advance_return!(Token::BitNot),
-                Some('-') => {
-                    self.chars.next();
-                    match self.chars.peek() {
-                        Some('>') => advance_return!(Token::Arrow),
-                        Some('=') => advance_return!(Token::SubAssign),
-                        _ => return Some(Token::Minus),
-                    };
-                }
-                Some('&') => {
-                    self.chars.next();
-                    if self.chars.peek() == Some('=') {
-                        advance_return!(Token::AndAssign);
-                    }
-                    return Some(Token::Address);
-                }
-                Some('=') => {
-                    self.chars.next();
-                    match self.chars.peek() {
-                        Some('=') => advance_return!(Token::Equal),
-                        _ => return Some(Token::Assign),
-                    }
-                }
-                Some('!') => {
-                    self.chars.next();
-                    match self.chars.next() {
-                        Some('=') => advance_return!(Token::NotEqual),
-                        _ => return Some(Token::Char('!')),
-                    }
-                }
-                Some('+') => {
-                    self.chars.next();
-                    match self.chars.peek() {
-                        Some('=') => advance_return!(Token::AddAssign),
-                        _ => return Some(Token::Plus),
-                    }
-                }
-                Some('*') => {
-                    self.chars.next();
-                    match self.chars.peek() {
-                        Some('=') => advance_return!(Token::MulAssign),
-                        _ => return Some(Token::Star),
-                    }
-                }
-                Some('/') => {
-                    self.chars.next();
-                    match self.chars.peek() {
-                        Some('=') => advance_return!(Token::DivAssign),
-                        _ => return Some(Token::Slash),
-                    }
-                }
-                Some('%') => {
-                    self.chars.next();
-                    match self.chars.peek() {
-                        Some('=') => advance_return!(Token::ModAssign),
-                        _ => return Some(Token::Percent),
-                    }
-                }
-                Some('<') => {
-                    self.chars.next();
-                    match self.chars.peek() {
-                        Some('=') => advance_return!(Token::LTE),
-                        Some('<') => {
-                            self.chars.next();
-                            match self.chars.peek() {
-                                Some('=') => advance_return!(Token::LShiftAssign),
-                                _ => return Some(Token::ShiftLeft),
-                            }
-                        }
-                        _ => return Some(Token::LT),
-                    }
-                }
-                Some('>') => {
-                    self.chars.next();
-                    match self.chars.peek() {
-                        Some('=') => advance_return!(Token::GTE),
-                        Some('>') => {
-                            self.chars.next();
-                            match self.chars.peek() {
-                                Some('=') => advance_return!(Token::RShiftAssign),
-                                _ => return Some(Token::ShiftRight),
-                            }
-                        }
-                        _ => return Some(Token::GT),
-                    }
-                }
-                Some('^') => {
-                    self.chars.next();
-                    match self.chars.peek() {
-                        Some('=') => advance_return!(Token::XorAssign),
-                        _ => return Some(Token::Char('^')),
-                    }
-                }
-                Some('|') => {
-                    self.chars.next();
-                    match self.chars.peek() {
-                        Some('=') => advance_return!(Token::OrAssign),
-                        _ => return Some(Token::Char('|')),
-                    }
-                }
-                Some('.') => {
-                    self.chars.next();
-                    match self.chars.peek() {
-                        Some('.') => advance_return!(Token::Range),
-                        _ => return Some(Token::Dot),
-                    }
-                }
+                Some('-') => lex_tree! {
+                    '>' => advance_return!(Token::Arrow),
+                    '=' => advance_return!(Token::SubAssign);
+                    default Token::Minus
+                },
+                Some('&') => compound_assignment!(Token::AndAssign, Token::Address),
+                Some('=') => compound_assignment!(Token::Equal,     Token::Assign),
+                Some('!') => compound_assignment!(Token::NotEqual,  Token::Char('!')),
+                Some('+') => compound_assignment!(Token::AddAssign, Token::Plus),
+                Some('*') => compound_assignment!(Token::MulAssign, Token::Star),
+                Some('/') => compound_assignment!(Token::DivAssign, Token::Slash),
+                Some('%') => compound_assignment!(Token::ModAssign, Token::Percent),
+                Some('<') => lex_tree! {
+                    '=' => advance_return!(Token::LTE),
+                    '<' => compound_assignment!(Token::LShiftAssign, Token::ShiftLeft);
+                    default Token::LT
+                },
+                Some('>') => lex_tree! {
+                    '=' => advance_return!(Token::GTE),
+                    '>' => compound_assignment!(Token::RShiftAssign, Token::ShiftRight);
+                    default Token::GT
+                },
+                Some('^') => compound_assignment!(Token::XorAssign, Token::Char('^')),
+                Some('|') => compound_assignment!(Token::OrAssign, Token::Char('|')),
+                Some('.') => lex_tree! {
+                    '.' => advance_return!(Token::Range);
+                    default Token::Dot
+                },
                 Some(c) => panic!("Unexpected character {}", c),
                 None => return None,
             }
