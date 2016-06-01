@@ -62,7 +62,9 @@ pub enum Token<'a> {
     Deref,
     Address,
 
-    Ident(&'a str),
+    // TODO: Fix the Peekable<Chars<'a>> problem so that we can slice instead of copying
+    Unused(&'a str),
+    Ident(String),
     Int(i64),
     Char(char),
 }
@@ -95,6 +97,16 @@ impl<'a> Lexer<'a> {
     make_num_lex!(lex_hex, 'x', 16);
     make_num_lex!(lex_oct, 'o', 8);
     make_num_lex!(lex_bin, 'b', 2);
+    fn lex_dec(&mut self) -> Option<Token<'a>> {
+        let mut accum = Vec::new();
+        loop {
+            if self.chars.peek().is_none() { break; }
+            if !self.chars.peek().unwrap().is_digit(10) { break; }
+            accum.push(self.chars.next().unwrap());
+        }
+        if self.chars.peek().map(|x| x.is_alphabetic()).unwrap_or(false) { return None; }
+        Some(Token::Int(accum.into_iter().collect::<String>().parse::<i64>().unwrap()))
+    }
 }
 
 impl<'a> Iterator for Lexer<'a> {
@@ -108,23 +120,25 @@ impl<'a> Iterator for Lexer<'a> {
                         Some(&'x') => return self.lex_hex(),
                         Some(&'o') => return self.lex_oct(),
                         Some(&'b') => return self.lex_bin(),
-                        Some(&x) if x.is_digit(10) => continue,
+                        Some(&x) if x.is_digit(10) => return self.lex_dec(),
                         _ => return Some(Token::Int(0)),
                     }
-                },
-                Some(&x) if x.is_digit(10) => {
-                    let mut accum = Vec::new();
-                    loop {
-                        if self.chars.peek().is_none() { break; }
-                        if !self.chars.peek().unwrap().is_digit(10) { break; }
-                        accum.push(self.chars.next().unwrap());
-                    }
-                    return Some(Token::Int(accum.into_iter().collect::<String>().parse::<i64>().unwrap()))
-                },
+                }
+                Some(&x) if x.is_digit(10) => return self.lex_dec(),
                 Some(&x) if x.is_whitespace() => {
                     while self.chars.peek().map(|x| x.is_whitespace()).unwrap_or(false) {
                         self.chars.next();
                     }
+                }
+                Some(&x) if x.is_alphabetic() => {
+                    let mut accum = Vec::new();
+                    while self.chars.peek().map(|x| x.is_alphanumeric() || *x == '_').unwrap_or(false) {
+                        accum.push(self.chars.next().unwrap());
+                    }
+                    if self.chars.peek().map(|&x| x == '?' || x == '!').unwrap_or(false) {
+                        accum.push(self.chars.next().unwrap());
+                    }
+                    return Some(Token::Ident(accum.into_iter().collect()))
                 }
                 Some(_) => return self.chars.next().map(|x| Token::Char(x)),
                 None => return None,
@@ -137,8 +151,8 @@ impl<'a> Iterator for Lexer<'a> {
 fn test_lex_numbers() {
     macro_rules! expect_number {
         ($expr:expr) => {
-            assert_eq!(Lexer::new(stringify!($expr)).next().unwrap(),
-                       Token::Int($expr));
+            assert_eq!(Lexer::new(stringify!($expr)).next(),
+                       Some(Token::Int($expr)));
         }
     }
 
@@ -165,4 +179,25 @@ fn test_lex_numbers() {
     ];
 
     assert_eq!(Lexer::new("0 42 123").collect::<Vec<_>>(), expected);
+    println!("{:?}", Lexer::new("00xDEADBEEF").next());
+    assert!(Lexer::new("00xDEADBEEF").next().is_none());
+}
+
+#[test]
+fn test_lex_identifiers() {
+    macro_rules! expect_identifier {
+        ($expr:expr) => {
+            assert_eq!(Lexer::new($expr).next(), Some(Token::Ident($expr.into())));
+        }
+    }
+
+    expect_identifier!("foo");
+    expect_identifier!("hunter2");
+    expect_identifier!("PascalCase");
+    expect_identifier!("camelCase");
+    expect_identifier!("snake_case");
+    expect_identifier!("YELLING_SNAKE_CASE");
+    expect_identifier!("This_Is_A_Bad");
+    expect_identifier!("empty?");
+    expect_identifier!("do_something!");
 }
