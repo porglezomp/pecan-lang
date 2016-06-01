@@ -1,8 +1,17 @@
 use std::str::FromStr;
+use ast::{Ast, Expr};
 
 grammar;
 
-pub Ident: &'input str = {r"[_a-zA-Z][_a-zA-Z0-9]*[!?]?"};
+pub Expr: Expr<'input> = {
+    Ident => Expr::Ident(<>),
+    Number => Expr::Int(<>),
+};
+
+pub Ident: &'input str = {
+    r"[_a-zA-Z][_a-zA-Z0-9]*[!?]?",
+};
+
 pub Number: i64 = {
     r"0b[01]+" => i64::from_str_radix(&<>[2..], 2).unwrap(),
     r"0o[0-7]+" => i64::from_str_radix(&<>[2..], 8).unwrap(),

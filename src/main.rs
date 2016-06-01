@@ -1,43 +1,54 @@
+pub mod ast;
+pub mod parser;
+
 fn main() {
     println!("Hello, World!");
 }
 
-pub mod parser;
-
 #[test]
 fn test_parse_ident() {
-    use parser::parse_Ident;
+    use parser::{parse_Ident, parse_Expr};
+    use ast::Expr;
+    macro_rules! test_parse {
+        ($expr:expr) => {
+            assert_eq!(parse_Expr($expr).unwrap(), Expr::Ident($expr));
+            assert_eq!(parse_Ident($expr).unwrap(), $expr);
+        }
+    }
 
-    assert!(parse_Ident("_").is_ok());
-    assert!(parse_Ident("foo").is_ok());
-    assert!(parse_Ident("parse_Ident").is_ok());
+    test_parse!("_");
+    test_parse!("foo");
+    test_parse!("parse_Ident");
 
-    assert!(parse_Ident("null?").is_ok());
-    assert!(parse_Ident("ChangeSomething!").is_ok());
+    test_parse!("null?");
+    test_parse!("ChangeSomething!");
     assert!(parse_Ident("nu?ll").is_err());
 
-    assert!(parse_Ident("foo02").is_ok());
-    assert!(parse_Ident("_3").is_ok());
+    test_parse!("foo02");
+    test_parse!("_3");
     assert!(parse_Ident("2asd").is_err());
 }
 
 #[test]
 fn test_parse_int() {
-    macro_rules! parse_matches {
+    use parser::{parse_Number, parse_Expr};
+    use ast::Expr;
+    macro_rules! test_parse {
         ($expr:expr) => {
-            assert_eq!(parser::parse_Number(stringify!($expr)).unwrap(), $expr);
+            assert_eq!(parse_Expr(stringify!($expr)).unwrap(), Expr::Int($expr));
+            assert_eq!(parse_Number(stringify!($expr)).unwrap(), $expr);
         }
     }
 
-    parse_matches!(0);
-    parse_matches!(42);
-    parse_matches!(1234567890);
-    parse_matches!(0x0);
-    parse_matches!(0xDEADBEEF);
-    parse_matches!(0x8BadF00d);
-    parse_matches!(0o0);
-    parse_matches!(0o01234567);
-    parse_matches!(0b0);
-    parse_matches!(0b1);
-    parse_matches!(0b10101010);
+    test_parse!(0);
+    test_parse!(42);
+    test_parse!(1234567890);
+    test_parse!(0x0);
+    test_parse!(0xDEADBEEF);
+    test_parse!(0x8BadF00d);
+    test_parse!(0o0);
+    test_parse!(0o01234567);
+    test_parse!(0b0);
+    test_parse!(0b1);
+    test_parse!(0b10101010);
 }
