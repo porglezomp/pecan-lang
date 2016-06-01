@@ -71,12 +71,30 @@ pub struct Lexer<'a> {
     chars: Peekable<Chars<'a>>,
 }
 
+macro_rules! make_num_lex {
+    ($name:ident, $char:expr, $base:expr) => {
+        fn $name(&mut self) -> Option<Token<'a>> {
+            assert_eq!(self.chars.next(), Some($char));
+            if !self.chars.peek().map(|x| x.is_digit($base)).unwrap_or(false) { return None; }
+            let mut accum = Vec::new();
+            while self.chars.peek().map(|x| x.is_digit($base)).unwrap_or(false) {
+                accum.push(self.chars.next().unwrap());
+            }
+            Some(Token::Int(i64::from_str_radix(accum.into_iter().collect::<String>().as_str(), $base).unwrap()))
+        }
+    }
+}
+
 impl<'a> Lexer<'a> {
     fn new(input: &'a str) -> Lexer<'a> {
         Lexer {
             chars: input.chars().peekable(),
         }
     }
+
+    make_num_lex!(lex_hex, 'x', 16);
+    make_num_lex!(lex_oct, 'o', 8);
+    make_num_lex!(lex_bin, 'b', 2);
 }
 
 impl<'a> Iterator for Lexer<'a> {
@@ -84,6 +102,16 @@ impl<'a> Iterator for Lexer<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.chars.peek() {
+                Some(&'0') => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some(&'x') => return self.lex_hex(),
+                        Some(&'o') => return self.lex_oct(),
+                        Some(&'b') => return self.lex_bin(),
+                        Some(&x) if x.is_digit(10) => continue,
+                        _ => return Some(Token::Int(0)),
+                    }
+                },
                 Some(&x) if x.is_digit(10) => {
                     let mut accum = Vec::new();
                     loop {
@@ -117,6 +145,18 @@ fn test_lex_numbers() {
     expect_number!(0);
     expect_number!(42);
     expect_number!(123);
+
+    expect_number!(0x0);
+    expect_number!(0x1234567890ABCDEF);
+    expect_number!(0xDEADBEEF);
+    expect_number!(0x8BadF00d);
+
+    expect_number!(0o0);
+    expect_number!(0o12345670);
+
+    expect_number!(0b0);
+    expect_number!(0b10);
+    expect_number!(0b00101110);
 
     let expected = vec![
         Token::Int(0),
