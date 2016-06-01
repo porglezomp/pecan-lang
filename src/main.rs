@@ -106,9 +106,7 @@ fn test_parse_expressions() {
                                        Expr::Subscript {
                                            obj: Box::new(Expr::Call {
                                                func: Box::new(Expr::Ident("hello")),
-                                               args: vec![
-                                                   Expr::Int(42),
-                                               ],
+                                               args: vec![Expr::Int(42)],
                                            }),
                                            idx: Box::new(Expr::make_binop (
                                                Expr::Int(1),
@@ -166,4 +164,14 @@ fn test_parse_expressions() {
                        )
                    )
                ));
+}
+
+#[test]
+fn test_parse_let() {
+    use parser::parse_Statement;
+
+    // TODO: Write more thorough tests
+    assert!(parse_Statement("let foo: I64 = 42;").is_ok());
+    assert!(parse_Statement("let bar: Bool = 123 > 124;").is_ok());
+    assert!(parse_Statement("let baz: () = qux();").is_ok());
 }

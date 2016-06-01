@@ -57,7 +57,7 @@ pub enum Expr<'a> {
     Call {
         func: Box<Expr<'a>>,
         args: Vec<Expr<'a>>,
-    }
+    },
 }
 
 impl<'a> Expr<'a> {
@@ -78,4 +78,16 @@ pub enum Ast<'a> {
         op: Operator,
         rhs: Expr<'a>,
     },
+    Let {
+        name: &'a str,
+        ty: Type,
+        expr: Expr<'a>
+    },
+}
+
+#[derive(PartialEq, Eq, Debug)]
+pub enum Type {
+    I64,
+    Unit,
+    Bool,
 }

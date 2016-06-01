@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use ast::{Ast, Expr, Operator};
+use ast::{Ast, Expr, Operator, Type};
 
 grammar;
 
@@ -15,7 +15,39 @@ Comma<X>: Vec<X> = {
 };
 
 pub Statement: Ast<'input> = {
-    <l:Primary> <op:Assignment> <r:Expr> ";" => Ast::Assign { lhs: l, op: op, rhs: r },
+    Let,
+    Assignment,
+};
+
+Assignment: Ast<'input> = {
+    <l:Primary> <op:AssignmentOp> <r:Expr> ";" => Ast::Assign { lhs: l, op: op, rhs: r },
+};
+
+use ast::Operator::*;
+pub AssignmentOp: Operator = {
+    "=" => Assign,
+    "+=" => AddAssign,
+    "-=" => SubAssign,
+    "*=" => MulAssign,
+    "/=" => DivAssign,
+    "%=" => ModAssign,
+    "<<=" => LShiftAssign,
+    ">>=" => RShiftAssign,
+    "&=" => AndAssign,
+    "^=" => XorAssign,
+    "|=" => OrAssign,
+};
+
+pub Type: Type = {
+    "I64" => Type::I64,
+    // We can't do "()" or else the tokenizer generates a single token for it,
+    // and then functions can't have empty arguments.
+    "(" ")" => Type::Unit,
+    "Bool" => Type::Bool,
+};
+
+Let: Ast<'input> = {
+    "let" <name:Ident> ":" <ty:Type> "=" <expr:Expr> ";" => Ast::Let { name: name, ty: ty, expr: expr },
 };
 
 pub Expr: Expr<'input> = {
@@ -124,19 +156,4 @@ pub Number: i64 = {
     r"0o[0-7]+" => i64::from_str_radix(&<>[2..], 8).unwrap(),
     r"0x[0-9A-Fa-f]+" => i64::from_str_radix(&<>[2..], 16).unwrap(),
     r"[0-9]+" => i64::from_str(<>).unwrap(),
-};
-
-use ast::Operator::*;
-pub Assignment: Operator = {
-    "=" => Assign,
-    "+=" => AddAssign,
-    "-=" => SubAssign,
-    "*=" => MulAssign,
-    "/=" => DivAssign,
-    "%=" => ModAssign,
-    "<<=" => LShiftAssign,
-    ">>=" => RShiftAssign,
-    "&=" => AndAssign,
-    "^=" => XorAssign,
-    "|=" => OrAssign,
 };
