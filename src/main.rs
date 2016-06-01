@@ -203,3 +203,13 @@ fn test_parse_while() {
     assert!(parse_Statement("while (True) { }").is_ok());
     assert!(parse_Block("{ let i: I64 = 0; while (i < 10) { i += 1; } }").is_ok());
 }
+
+#[test]
+fn test_parse_return() {
+    use parser::parse_Statement;
+
+    // TODO: Write more thorough tests
+    assert!(parse_Statement("return;").is_ok());
+    assert!(parse_Statement("return 1;").is_ok());
+    assert!(parse_Statement("return a + b;").is_ok());
+}

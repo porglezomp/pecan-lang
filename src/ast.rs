@@ -99,6 +99,7 @@ pub enum Ast<'a> {
         cond: Expr<'a>,
         block: Vec<Ast<'a>>,
     },
+    Return(Option<Expr<'a>>),
 }
 
 #[derive(PartialEq, Eq, Debug)]

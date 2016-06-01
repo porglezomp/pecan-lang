@@ -21,6 +21,7 @@ pub Statement: Ast<'input> = {
     <Expr> ";" => Ast::Expr(<>),
     For,
     While,
+    Return,
 };
 
 Assignment: Ast<'input> = {
@@ -73,6 +74,10 @@ For: Ast<'input> = {
 
 While: Ast<'input> = {
     "while" "(" <cond:Expr> ")" <block:Block> => Ast::While { cond: cond, block: block },
+};
+
+Return: Ast<'input> = {
+    "return" <Expr?> ";" => Ast::Return(<>),
 };
 
 pub Expr: Expr<'input> = {
