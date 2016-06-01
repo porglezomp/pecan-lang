@@ -100,6 +100,12 @@ pub enum Ast<'a> {
         block: Vec<Ast<'a>>,
     },
     Return(Option<Expr<'a>>),
+    Function {
+        name: &'a str,
+        args: Vec<(&'a str, Type)>,
+        ret: Type,
+        body: Vec<Ast<'a>>,
+    },
 }
 
 #[derive(PartialEq, Eq, Debug)]

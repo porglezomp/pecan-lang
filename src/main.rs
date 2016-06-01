@@ -197,11 +197,11 @@ fn test_parse_for() {
 
 #[test]
 fn test_parse_while() {
-    use parser::{parse_Statement, parse_Block};
+    use parser::{parse_Statement, parse_File};
 
     // TODO: Write more thorough tests
     assert!(parse_Statement("while (True) { }").is_ok());
-    assert!(parse_Block("{ let i: I64 = 0; while (i < 10) { i += 1; } }").is_ok());
+    assert!(parse_File("let i: I64 = 0; while (i < 10) { i += 1; }").is_ok());
 }
 
 #[test]
@@ -212,4 +212,24 @@ fn test_parse_return() {
     assert!(parse_Statement("return;").is_ok());
     assert!(parse_Statement("return 1;").is_ok());
     assert!(parse_Statement("return a + b;").is_ok());
+}
+
+#[test]
+fn test_parse_function() {
+    use parser::{parse_Statement};
+
+    // TODO: Write more thorough tests
+    assert!(parse_Statement("fn hello(n: I64) {}").is_ok());
+    assert!(parse_Statement("fn fib(n: I64) -> I64 {
+  let a: I64 = 0;
+  let b: I64 = 1;
+  for i: I64 in 0..n {
+    let c: I64 = a;
+    a += b;
+    b = c;
+  }
+  a;
+}").is_ok());
+    assert!(parse_Statement("fn foo() {}").is_ok());
+    assert!(parse_Statement("fn baz ( hi: (), what: (), ) -> Bool { hi == what; }").is_ok());
 }

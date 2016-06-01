@@ -3,6 +3,10 @@ use ast::{Ast, Expr, Operator, Type};
 
 grammar;
 
+pub File: Vec<Ast<'input>> = {
+    Statement*
+};
+
 Comma<X>: Vec<X> = {
     <v:(<X> ",")*> <e:X?> => match e {
         None => v,
@@ -22,6 +26,7 @@ pub Statement: Ast<'input> = {
     For,
     While,
     Return,
+    Function,
 };
 
 Assignment: Ast<'input> = {
@@ -63,7 +68,7 @@ IfElse: Ast<'input> = {
         Ast::IfElse { cond: cond, then: then, else_: Some(else_) },
 };
 
-pub Block: Vec<Ast<'input>> = {
+Block: Vec<Ast<'input>> = {
     "{" <Statement*> "}"
 };
 
@@ -78,6 +83,15 @@ While: Ast<'input> = {
 
 Return: Ast<'input> = {
     "return" <Expr?> ";" => Ast::Return(<>),
+};
+
+Function: Ast<'input> = {
+    "fn" <name:Ident> "(" <args:Comma<TypedIdent>> ")" <ret:("->" <Type>)?> <body:Block> =>
+        Ast::Function { name: name, args: args, ret: ret.unwrap_or(Type::Unit), body: body },
+};
+
+TypedIdent: (&'input str, Type) = {
+    <Ident> ":" <Type>,
 };
 
 pub Expr: Expr<'input> = {
