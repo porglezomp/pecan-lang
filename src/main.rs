@@ -175,3 +175,13 @@ fn test_parse_let() {
     assert!(parse_Statement("let bar: Bool = 123 > 124;").is_ok());
     assert!(parse_Statement("let baz: () = qux();").is_ok());
 }
+
+#[test]
+fn test_parse_if_else() {
+    use parser::parse_Statement;
+
+    // TODO: Write more thorough tests
+    assert!(parse_Statement("if (True) { a; }").is_ok());
+    assert!(parse_Statement("if (1 == 1) { a; } else { b; }").is_ok());
+    assert!(parse_Statement("if (1 < 2) { print(42); } else if (2 < 1) { print(1); }").is_ok());
+}

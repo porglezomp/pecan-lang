@@ -17,6 +17,8 @@ Comma<X>: Vec<X> = {
 pub Statement: Ast<'input> = {
     Let,
     Assignment,
+    IfElse,
+    <Expr> ";" => Ast::Expr(<>),
 };
 
 Assignment: Ast<'input> = {
@@ -48,6 +50,18 @@ pub Type: Type = {
 
 Let: Ast<'input> = {
     "let" <name:Ident> ":" <ty:Type> "=" <expr:Expr> ";" => Ast::Let { name: name, ty: ty, expr: expr },
+};
+
+IfElse: Ast<'input> = {
+    "if" "(" <cond:Expr> ")" <then:Block> => Ast::IfElse { cond: cond, then: then, else_: None },
+    "if" "(" <cond:Expr> ")" <then:Block> "else" <ifelse:IfElse> =>
+        Ast::IfElse { cond: cond, then: then, else_: Some(vec![ifelse]) },
+    "if" "(" <cond:Expr> ")" <then:Block> "else" <else_:Block> =>
+        Ast::IfElse { cond: cond, then: then, else_: Some(else_) },
+};
+
+Block: Vec<Ast<'input>> = {
+    "{" <Statement*> "}"
 };
 
 pub Expr: Expr<'input> = {

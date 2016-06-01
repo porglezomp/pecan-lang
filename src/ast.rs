@@ -83,6 +83,11 @@ pub enum Ast<'a> {
         ty: Type,
         expr: Expr<'a>
     },
+    IfElse {
+        cond: Expr<'a>,
+        then: Vec<Ast<'a>>,
+        else_: Option<Vec<Ast<'a>>>,
+    }
 }
 
 #[derive(PartialEq, Eq, Debug)]
