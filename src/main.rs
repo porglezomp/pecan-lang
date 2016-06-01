@@ -1,10 +1,12 @@
 pub mod ast;
-pub mod parser;
+pub mod lexer;
+// pub mod parser;
 
 fn main() {
     println!("Hello, World!");
 }
 
+/*
 #[test]
 fn test_parse_ident() {
     use parser::{parse_Ident, parse_Expr};
@@ -233,3 +235,4 @@ fn test_parse_function() {
     assert!(parse_Statement("fn foo() {}").is_ok());
     assert!(parse_Statement("fn baz ( hi: (), what: (), ) -> Bool { hi == what; }").is_ok());
 }
+*/
