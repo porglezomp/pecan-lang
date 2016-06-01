@@ -1,9 +1,17 @@
 use std::str::FromStr;
-use ast::{Ast, Expr};
+use ast::{Ast, Expr, Operator};
 
 grammar;
 
+pub Statement: Ast<'input> = {
+    <l:Primary> <op:Assignment> <r:Expr> ";" => Ast::Assign { lhs: l, op: op, rhs: r },
+};
+
 pub Expr: Expr<'input> = {
+    Primary,
+};
+
+pub Primary: Expr<'input> = {
     Ident => Expr::Ident(<>),
     Number => Expr::Int(<>),
 };
@@ -17,4 +25,19 @@ pub Number: i64 = {
     r"0o[0-7]+" => i64::from_str_radix(&<>[2..], 8).unwrap(),
     r"0x[0-9A-Fa-f]+" => i64::from_str_radix(&<>[2..], 16).unwrap(),
     r"[0-9]+" => i64::from_str(<>).unwrap(),
+};
+
+use ast::Operator::*;
+pub Assignment: Operator = {
+    "=" => Assign,
+    "+=" => AddAssign,
+    "-=" => SubAssign,
+    "*=" => MulAssign,
+    "/=" => DivAssign,
+    "%=" => ModAssign,
+    "<<=" => LShiftAssign,
+    ">>=" => RShiftAssign,
+    "&=" => AndAssign,
+    "^=" => XorAssign,
+    "|=" => OrAssign,
 };

@@ -7,11 +7,11 @@ fn main() {
 
 #[test]
 fn test_parse_ident() {
-    use parser::{parse_Ident, parse_Expr};
+    use parser::{parse_Ident, parse_Primary};
     use ast::Expr;
     macro_rules! test_parse {
         ($expr:expr) => {
-            assert_eq!(parse_Expr($expr).unwrap(), Expr::Ident($expr));
+            assert_eq!(parse_Primary($expr).unwrap(), Expr::Ident($expr));
             assert_eq!(parse_Ident($expr).unwrap(), $expr);
         }
     }
@@ -31,11 +31,11 @@ fn test_parse_ident() {
 
 #[test]
 fn test_parse_int() {
-    use parser::{parse_Number, parse_Expr};
+    use parser::{parse_Number, parse_Primary};
     use ast::Expr;
     macro_rules! test_parse {
         ($expr:expr) => {
-            assert_eq!(parse_Expr(stringify!($expr)).unwrap(), Expr::Int($expr));
+            assert_eq!(parse_Primary(stringify!($expr)).unwrap(), Expr::Int($expr));
             assert_eq!(parse_Number(stringify!($expr)).unwrap(), $expr);
         }
     }
@@ -51,4 +51,28 @@ fn test_parse_int() {
     test_parse!(0b0);
     test_parse!(0b1);
     test_parse!(0b10101010);
+}
+
+#[test]
+fn test_parse_assignment() {
+    use parser::parse_Statement;
+    use ast::{Ast, Expr, Operator};
+    assert_eq!(parse_Statement("a = b;").unwrap(),
+               Ast::Assign {
+                   lhs: Expr::Ident("a"),
+                   op: Operator::Assign,
+                   rhs: Expr::Ident("b"),
+               });
+    assert_eq!(parse_Statement("_ = 100;").unwrap(),
+               Ast::Assign {
+                   lhs: Expr::Ident("_"),
+                   op: Operator::Assign,
+                   rhs: Expr::Int(100),
+               });
+    assert_eq!(parse_Statement("a += b;").unwrap(),
+               Ast::Assign {
+                   lhs: Expr::Ident("a"),
+                   op: Operator::AddAssign,
+                   rhs: Expr::Ident("b"),
+               });
 }
