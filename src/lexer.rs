@@ -1,7 +1,7 @@
 use std::str::CharIndices;
 
 #[derive(PartialEq, Debug)]
-pub enum Token<'a> {
+enum Token<'a> {
     If,
     Else,
     For,
@@ -47,18 +47,18 @@ pub enum Token<'a> {
 
     ShiftLeft,
     ShiftRight,
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Mod,
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Percent,
 
     Range,
+    Dot,
 
     BitNot,
     // Bit...
 
-    Deref,
     Address,
 
     Ident(&'a str),
@@ -115,7 +115,7 @@ impl<'a> Lookahead<'a> {
     }
 }
 
-pub struct Lexer<'a> {
+struct Lexer<'a> {
     chars: Lookahead<'a>,
 }
 
@@ -157,9 +157,16 @@ impl<'a> Lexer<'a> {
     }
 }
 
+
 impl<'a> Iterator for Lexer<'a> {
     type Item = Token<'a>;
     fn next(&mut self) -> Option<Self::Item> {
+        macro_rules! advance_return {
+            ($expr:expr) => {
+                { self.chars.next(); return Some($expr); }
+            }
+        }
+
         loop {
             match self.chars.peek() {
                 Some('0') => {
@@ -187,9 +194,139 @@ impl<'a> Iterator for Lexer<'a> {
                         self.chars.next();
                     }
                     let end_pos = self.chars.peek_pos().expect("end index");
-                    return Some(Token::Ident(&self.chars.as_str()[start_pos..end_pos]))
+                    let text = &self.chars.as_str()[start_pos..end_pos];
+                    return Some(match text {
+                        "if" => Token::If,
+                        "else" => Token::Else,
+                        "for" => Token::For,
+                        "in" => Token::In,
+                        "while" => Token::While,
+                        "let" => Token::Let,
+                        "return" => Token::Return,
+                        "fn" => Token::Fn,
+                        "and" => Token::And,
+                        "or" => Token::Or,
+                        "not" => Token::Not,
+                        text => Token::Ident(text),
+                    });
                 }
-                Some(_) => return self.chars.next().map(|x| Token::Char(x)),
+                Some(';') => advance_return!(Token::Semicolon),
+                Some(',') => advance_return!(Token::Comma),
+                Some(':') => advance_return!(Token::Colon),
+                Some('(') => advance_return!(Token::OpenParen),
+                Some(')') => advance_return!(Token::CloseParen),
+                Some('[') => advance_return!(Token::OpenSquare),
+                Some(']') => advance_return!(Token::CloseSquare),
+                Some('{') => advance_return!(Token::OpenCurly),
+                Some('}') => advance_return!(Token::CloseCurly),
+                Some('~') => advance_return!(Token::BitNot),
+                Some('-') => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some('>') => advance_return!(Token::Arrow),
+                        Some('=') => advance_return!(Token::SubAssign),
+                        _ => return Some(Token::Minus),
+                    };
+                }
+                Some('&') => {
+                    self.chars.next();
+                    if self.chars.peek() == Some('=') {
+                        advance_return!(Token::AndAssign);
+                    }
+                    return Some(Token::Address);
+                }
+                Some('=') => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some('=') => advance_return!(Token::Equal),
+                        _ => return Some(Token::Assign),
+                    }
+                }
+                Some('!') => {
+                    self.chars.next();
+                    match self.chars.next() {
+                        Some('=') => advance_return!(Token::NotEqual),
+                        _ => return Some(Token::Char('!')),
+                    }
+                }
+                Some('+') => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some('=') => advance_return!(Token::AddAssign),
+                        _ => return Some(Token::Plus),
+                    }
+                }
+                Some('*') => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some('=') => advance_return!(Token::MulAssign),
+                        _ => return Some(Token::Star),
+                    }
+                }
+                Some('/') => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some('=') => advance_return!(Token::DivAssign),
+                        _ => return Some(Token::Slash),
+                    }
+                }
+                Some('%') => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some('=') => advance_return!(Token::ModAssign),
+                        _ => return Some(Token::Percent),
+                    }
+                }
+                Some('<') => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some('=') => advance_return!(Token::LTE),
+                        Some('<') => {
+                            self.chars.next();
+                            match self.chars.peek() {
+                                Some('=') => advance_return!(Token::LShiftAssign),
+                                _ => return Some(Token::ShiftLeft),
+                            }
+                        }
+                        _ => return Some(Token::LT),
+                    }
+                }
+                Some('>') => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some('=') => advance_return!(Token::GTE),
+                        Some('>') => {
+                            self.chars.next();
+                            match self.chars.peek() {
+                                Some('=') => advance_return!(Token::RShiftAssign),
+                                _ => return Some(Token::ShiftRight),
+                            }
+                        }
+                        _ => return Some(Token::GT),
+                    }
+                }
+                Some('^') => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some('=') => advance_return!(Token::XorAssign),
+                        _ => return Some(Token::Char('^')),
+                    }
+                }
+                Some('|') => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some('=') => advance_return!(Token::OrAssign),
+                        _ => return Some(Token::Char('|')),
+                    }
+                }
+                Some('.') => {
+                    self.chars.next();
+                    match self.chars.peek() {
+                        Some('.') => advance_return!(Token::Range),
+                        _ => return Some(Token::Dot),
+                    }
+                }
+                Some(c) => panic!("Unexpected character {}", c),
                 None => return None,
             }
         }
@@ -248,4 +385,32 @@ fn test_lex_identifiers() {
     expect_identifier!("This_Is_A_Bad");
     expect_identifier!("empty?");
     expect_identifier!("do_something!");
+}
+
+#[test]
+fn test_large_lex() {
+    let code = "fn fib(n: I64) -> I64 {
+  let a: I64 = 0;
+  let b: I64 = 1;
+  for i: I64 in 0..n {
+    let c: I64 = a;
+    a += b;
+    b = c;
+  }
+  return a;
+}";
+    use self::Token::*;
+    let expected = vec![
+        Fn, Ident("fib"), OpenParen, Ident("n"), Colon, Ident("I64"), CloseParen, Arrow, Ident("I64"), OpenCurly,
+        Let, Ident("a"), Colon, Ident("I64"), Assign, Int(0), Semicolon,
+        Let, Ident("b"), Colon, Ident("I64"), Assign, Int(1), Semicolon,
+        For, Ident("i"), Colon, Ident("I64"), In, Int(0), Range, Ident("n"), OpenCurly,
+        Let, Ident("c"), Colon, Ident("I64"), Assign, Ident("a"), Semicolon,
+        Ident("a"), AddAssign, Ident("b"), Semicolon,
+        Ident("b"), Assign, Ident("c"), Semicolon,
+        CloseCurly,
+        Return, Ident("a"), Semicolon,
+        CloseCurly,
+    ];
+    assert_eq!(Lexer::new(code).collect::<Vec<_>>(), expected);
 }

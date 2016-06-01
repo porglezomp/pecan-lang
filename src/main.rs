@@ -230,9 +230,9 @@ fn test_parse_function() {
     a += b;
     b = c;
   }
-  a;
+  return a;
 }").is_ok());
     assert!(parse_Statement("fn foo() {}").is_ok());
-    assert!(parse_Statement("fn baz ( hi: (), what: (), ) -> Bool { hi == what; }").is_ok());
+    assert!(parse_Statement("fn baz ( hi: (), what: (), ) -> Bool { return hi == what; }").is_ok());
 }
 */
