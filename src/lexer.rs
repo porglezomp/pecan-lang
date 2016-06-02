@@ -1,7 +1,7 @@
 use std::str::CharIndices;
 
 #[derive(PartialEq, Debug)]
-enum Token<'a> {
+pub enum Token<'a> {
     If,
     Else,
     For,
@@ -23,43 +23,43 @@ enum Token<'a> {
     OpenCurly,
     CloseCurly,
 
-    Assign,
-    AddAssign,
-    SubAssign,
-    MulAssign,
-    DivAssign,
-    ModAssign,
-    LShiftAssign,
-    RShiftAssign,
-    AndAssign,
-    XorAssign,
-    OrAssign,
+    Equals,
+    PlusEquals,
+    MinusEquals,
+    StarEquals,
+    SlashEquals,
+    PercentEquals,
+    LessThanLessThanEquals,
+    GreaterThanGreaterThanEquals,
+    AndEquals,
+    CaratEquals,
+    PipeEquals,
 
     Or,
     And,
     Not,
-    Equal,
-    NotEqual,
-    LT,
-    GT,
-    LTE,
-    GTE,
+    EqualsEquals,
+    BangEquals,
+    LessThan,
+    GreaterThan,
+    LessThanEquals,
+    GreaterThanEquals,
 
-    ShiftLeft,
-    ShiftRight,
+    LessThanLessThan,
+    GreaterThanGreaterThan,
     Plus,
     Minus,
     Star,
     Slash,
     Percent,
 
-    Range,
     Dot,
+    DotDot,
 
-    BitNot,
+    Tilde,
     // Bit...
 
-    Address,
+    Ampersand,
 
     Ident(&'a str),
     Int(i64),
@@ -115,7 +115,7 @@ impl<'a> Lookahead<'a> {
     }
 }
 
-struct Lexer<'a> {
+pub struct Lexer<'a> {
     chars: Lookahead<'a>,
 }
 
@@ -136,7 +136,7 @@ macro_rules! make_num_lex {
 }
 
 impl<'a> Lexer<'a> {
-    fn new(input: &'a str) -> Lexer<'a> {
+    pub fn new(input: &'a str) -> Lexer<'a> {
         Lexer {
             chars: Lookahead::new(input.char_indices()),
         }
@@ -145,6 +145,7 @@ impl<'a> Lexer<'a> {
     make_num_lex!(lex_hex, 'x', 16);
     make_num_lex!(lex_oct, 'o', 8);
     make_num_lex!(lex_bin, 'b', 2);
+
     fn lex_dec(&mut self) -> Option<Token<'a>> {
         let data = self.chars.as_str();
         let start_pos = self.chars.peek_pos().expect("start index");
@@ -206,7 +207,7 @@ impl<'a> Iterator for Lexer<'a> {
                         self.chars.next();
                     }
                 }
-                Some(x) if x.is_alphabetic() => {
+                Some(x) if x.is_alphabetic() || x == '_' => {
                     let start_pos = self.chars.peek_pos().expect("start index");
                     while self.chars.peek().map(|x| x.is_alphanumeric() || x == '_').unwrap_or(false) {
                         self.chars.next();
@@ -240,36 +241,36 @@ impl<'a> Iterator for Lexer<'a> {
                 Some(']') => advance_return!(Token::CloseSquare),
                 Some('{') => advance_return!(Token::OpenCurly),
                 Some('}') => advance_return!(Token::CloseCurly),
-                Some('~') => advance_return!(Token::BitNot),
+                Some('~') => advance_return!(Token::Tilde),
                 Some('-') => lex_tree! {
                     '>' => advance_return!(Token::Arrow),
-                    '=' => advance_return!(Token::SubAssign);
+                    '=' => advance_return!(Token::MinusEquals);
                     default Token::Minus
                 },
-                Some('&') => compound_assignment!(Token::AndAssign, Token::Address),
-                Some('=') => compound_assignment!(Token::Equal,     Token::Assign),
-                Some('!') => compound_assignment!(Token::NotEqual,  Token::Char('!')),
-                Some('+') => compound_assignment!(Token::AddAssign, Token::Plus),
-                Some('*') => compound_assignment!(Token::MulAssign, Token::Star),
-                Some('/') => compound_assignment!(Token::DivAssign, Token::Slash),
-                Some('%') => compound_assignment!(Token::ModAssign, Token::Percent),
+                Some('&') => compound_assignment!(Token::AndEquals, Token::Ampersand),
+                Some('=') => compound_assignment!(Token::EqualsEquals,     Token::Equals),
+                Some('!') => compound_assignment!(Token::BangEquals,  Token::Char('!')),
+                Some('+') => compound_assignment!(Token::PlusEquals, Token::Plus),
+                Some('*') => compound_assignment!(Token::StarEquals, Token::Star),
+                Some('/') => compound_assignment!(Token::SlashEquals, Token::Slash),
+                Some('%') => compound_assignment!(Token::PercentEquals, Token::Percent),
                 Some('<') => lex_tree! {
-                    '=' => advance_return!(Token::LTE),
-                    '<' => compound_assignment!(Token::LShiftAssign, Token::ShiftLeft);
-                    default Token::LT
+                    '=' => advance_return!(Token::LessThanEquals),
+                    '<' => compound_assignment!(Token::LessThanLessThanEquals, Token::LessThanLessThan);
+                    default Token::LessThan
                 },
                 Some('>') => lex_tree! {
-                    '=' => advance_return!(Token::GTE),
-                    '>' => compound_assignment!(Token::RShiftAssign, Token::ShiftRight);
-                    default Token::GT
+                    '=' => advance_return!(Token::GreaterThanEquals),
+                    '>' => compound_assignment!(Token::GreaterThanGreaterThanEquals, Token::GreaterThanGreaterThan);
+                    default Token::GreaterThan
                 },
-                Some('^') => compound_assignment!(Token::XorAssign, Token::Char('^')),
-                Some('|') => compound_assignment!(Token::OrAssign, Token::Char('|')),
+                Some('^') => compound_assignment!(Token::CaratEquals, Token::Char('^')),
+                Some('|') => compound_assignment!(Token::PipeEquals, Token::Char('|')),
                 Some('.') => lex_tree! {
-                    '.' => advance_return!(Token::Range);
+                    '.' => advance_return!(Token::DotDot);
                     default Token::Dot
                 },
-                Some(c) => panic!("Unexpected character {}", c),
+                Some(c) => return Some(Token::Char(c)),
                 None => return None,
             }
         }
@@ -319,6 +320,7 @@ fn test_lex_identifiers() {
         }
     }
 
+    expect_identifier!("_");
     expect_identifier!("foo");
     expect_identifier!("hunter2");
     expect_identifier!("PascalCase");
@@ -345,12 +347,12 @@ fn test_large_lex() {
     use self::Token::*;
     let expected = vec![
         Fn, Ident("fib"), OpenParen, Ident("n"), Colon, Ident("I64"), CloseParen, Arrow, Ident("I64"), OpenCurly,
-        Let, Ident("a"), Colon, Ident("I64"), Assign, Int(0), Semicolon,
-        Let, Ident("b"), Colon, Ident("I64"), Assign, Int(1), Semicolon,
-        For, Ident("i"), Colon, Ident("I64"), In, Int(0), Range, Ident("n"), OpenCurly,
-        Let, Ident("c"), Colon, Ident("I64"), Assign, Ident("a"), Semicolon,
-        Ident("a"), AddAssign, Ident("b"), Semicolon,
-        Ident("b"), Assign, Ident("c"), Semicolon,
+        Let, Ident("a"), Colon, Ident("I64"), Equals, Int(0), Semicolon,
+        Let, Ident("b"), Colon, Ident("I64"), Equals, Int(1), Semicolon,
+        For, Ident("i"), Colon, Ident("I64"), In, Int(0), DotDot, Ident("n"), OpenCurly,
+        Let, Ident("c"), Colon, Ident("I64"), Equals, Ident("a"), Semicolon,
+        Ident("a"), PlusEquals, Ident("b"), Semicolon,
+        Ident("b"), Equals, Ident("c"), Semicolon,
         CloseCurly,
         Return, Ident("a"), Semicolon,
         CloseCurly,

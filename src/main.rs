@@ -1,77 +1,30 @@
 pub mod ast;
 pub mod lexer;
-// pub mod parser;
+pub mod parser;
+
+use lexer::Lexer;
 
 fn main() {
     println!("Hello, World!");
-}
-
-/*
-#[test]
-fn test_parse_ident() {
-    use parser::{parse_Ident, parse_Expr};
-    use ast::Expr;
-    macro_rules! test_parse {
-        ($expr:expr) => {
-            assert_eq!(parse_Expr($expr).unwrap(), Expr::Ident($expr));
-            assert_eq!(parse_Ident($expr).unwrap(), $expr);
-        }
-    }
-
-    test_parse!("_");
-    test_parse!("foo");
-    test_parse!("parse_Ident");
-
-    test_parse!("null?");
-    test_parse!("ChangeSomething!");
-    assert!(parse_Ident("nu?ll").is_err());
-
-    test_parse!("foo02");
-    test_parse!("_3");
-    assert!(parse_Ident("2asd").is_err());
-}
-
-#[test]
-fn test_parse_int() {
-    use parser::{parse_Number, parse_Expr};
-    use ast::Expr;
-    macro_rules! test_parse {
-        ($expr:expr) => {
-            assert_eq!(parse_Expr(stringify!($expr)).unwrap(), Expr::Int($expr));
-            assert_eq!(parse_Number(stringify!($expr)).unwrap(), $expr);
-        }
-    }
-
-    test_parse!(0);
-    test_parse!(42);
-    test_parse!(1234567890);
-    test_parse!(0x0);
-    test_parse!(0xDEADBEEF);
-    test_parse!(0x8BadF00d);
-    test_parse!(0o0);
-    test_parse!(0o01234567);
-    test_parse!(0b0);
-    test_parse!(0b1);
-    test_parse!(0b10101010);
 }
 
 #[test]
 fn test_parse_assignment() {
     use parser::parse_Statement;
     use ast::{Ast, Expr, Operator};
-    assert_eq!(parse_Statement("a = b;").unwrap(),
+    assert_eq!(parse_Statement(Lexer::new("a = b;")).unwrap(),
                Ast::Assign {
                    lhs: Expr::Ident("a"),
                    op: Operator::Assign,
                    rhs: Expr::Ident("b"),
                });
-    assert_eq!(parse_Statement("_ = 100;").unwrap(),
+    assert_eq!(parse_Statement(Lexer::new("_ = 100;")).unwrap(),
                Ast::Assign {
                    lhs: Expr::Ident("_"),
                    op: Operator::Assign,
                    rhs: Expr::Int(100),
                });
-    assert_eq!(parse_Statement("a += b;").unwrap(),
+    assert_eq!(parse_Statement(Lexer::new("a += b;")).unwrap(),
                Ast::Assign {
                    lhs: Expr::Ident("a"),
                    op: Operator::AddAssign,
@@ -83,7 +36,7 @@ fn test_parse_assignment() {
 fn test_parse_expressions() {
     use parser::parse_Expr;
     use ast::{Expr, Operator};
-    assert_eq!(parse_Expr("1 + 1 * 2 == 3").unwrap(),
+    assert_eq!(parse_Expr(Lexer::new("1 + 1 * 2 == 3")).unwrap(),
                Expr::make_binop(
                    Expr::make_binop(
                        Expr::Int(1),
@@ -97,7 +50,7 @@ fn test_parse_expressions() {
                    Operator::Equal,
                    Expr::Int(3)
                ));
-    assert_eq!(parse_Expr("hello(42)[1 + 1]->world.bar().baz + 2*5").unwrap(),
+    assert_eq!(parse_Expr(Lexer::new("hello(42)[1 + 1]->world.bar().baz + 2*5")).unwrap(),
                Expr::make_binop(
                    Expr::GetItem {
                        obj: Box::new(Expr::Call {
@@ -132,7 +85,7 @@ fn test_parse_expressions() {
                        Expr::Int(5)
                    )
                ));
-    assert_eq!(parse_Expr("2 < 3 == 5 >= 3 and (1 == 2 and 1 or a != b)").unwrap(),
+    assert_eq!(parse_Expr(Lexer::new("2 < 3 == 5 >= 3 and (1 == 2 and 1 or a != b)")).unwrap(),
                Expr::make_binop(
                    Expr::make_binop(
                        Expr::make_binop(
@@ -173,9 +126,9 @@ fn test_parse_let() {
     use parser::parse_Statement;
 
     // TODO: Write more thorough tests
-    assert!(parse_Statement("let foo: I64 = 42;").is_ok());
-    assert!(parse_Statement("let bar: Bool = 123 > 124;").is_ok());
-    assert!(parse_Statement("let baz: () = qux();").is_ok());
+    assert!(parse_Statement(Lexer::new("let foo: I64 = 42;")).is_ok());
+    assert!(parse_Statement(Lexer::new("let bar: Bool = 123 > 124;")).is_ok());
+    assert!(parse_Statement(Lexer::new("let baz: () = qux();")).is_ok());
 }
 
 #[test]
@@ -183,9 +136,9 @@ fn test_parse_if_else() {
     use parser::parse_Statement;
 
     // TODO: Write more thorough tests
-    assert!(parse_Statement("if (True) { a; }").is_ok());
-    assert!(parse_Statement("if (1 == 1) { a; } else { b; }").is_ok());
-    assert!(parse_Statement("if (1 < 2) { print(42); } else if (2 < 1) { print(1); }").is_ok());
+    assert!(parse_Statement(Lexer::new("if (True) { a; }")).is_ok());
+    assert!(parse_Statement(Lexer::new("if (1 == 1) { a; } else { b; }")).is_ok());
+    assert!(parse_Statement(Lexer::new("if (1 < 2) { print(42); } else if (2 < 1) { print(1); }")).is_ok());
 }
 
 #[test]
@@ -193,8 +146,8 @@ fn test_parse_for() {
     use parser::parse_Statement;
 
     // TODO: Write more thorough tests
-    assert!(parse_Statement("for i: I64 in 0..64 { }").is_ok());
-    assert!(parse_Statement("for x: I64 in items(hi) { print(x); }").is_ok());
+    assert!(parse_Statement(Lexer::new("for i: I64 in 0..64 { }")).is_ok());
+    assert!(parse_Statement(Lexer::new("for x: I64 in items(hi) { print(x); }")).is_ok());
 }
 
 #[test]
@@ -202,8 +155,8 @@ fn test_parse_while() {
     use parser::{parse_Statement, parse_File};
 
     // TODO: Write more thorough tests
-    assert!(parse_Statement("while (True) { }").is_ok());
-    assert!(parse_File("let i: I64 = 0; while (i < 10) { i += 1; }").is_ok());
+    assert!(parse_Statement(Lexer::new("while (True) { }")).is_ok());
+    assert!(parse_File(Lexer::new("let i: I64 = 0; while (i < 10) { i += 1; }")).is_ok());
 }
 
 #[test]
@@ -211,9 +164,9 @@ fn test_parse_return() {
     use parser::parse_Statement;
 
     // TODO: Write more thorough tests
-    assert!(parse_Statement("return;").is_ok());
-    assert!(parse_Statement("return 1;").is_ok());
-    assert!(parse_Statement("return a + b;").is_ok());
+    assert!(parse_Statement(Lexer::new("return;")).is_ok());
+    assert!(parse_Statement(Lexer::new("return 1;")).is_ok());
+    assert!(parse_Statement(Lexer::new("return a + b;")).is_ok());
 }
 
 #[test]
@@ -221,8 +174,8 @@ fn test_parse_function() {
     use parser::{parse_Statement};
 
     // TODO: Write more thorough tests
-    assert!(parse_Statement("fn hello(n: I64) {}").is_ok());
-    assert!(parse_Statement("fn fib(n: I64) -> I64 {
+    assert!(parse_Statement(Lexer::new("fn hello(n: I64) {}")).is_ok());
+    assert!(parse_Statement(Lexer::new("fn fib(n: I64) -> I64 {
   let a: I64 = 0;
   let b: I64 = 1;
   for i: I64 in 0..n {
@@ -231,8 +184,7 @@ fn test_parse_function() {
     b = c;
   }
   return a;
-}").is_ok());
-    assert!(parse_Statement("fn foo() {}").is_ok());
-    assert!(parse_Statement("fn baz ( hi: (), what: (), ) -> Bool { return hi == what; }").is_ok());
+}")).is_ok());
+    assert!(parse_Statement(Lexer::new("fn foo() {}")).is_ok());
+    assert!(parse_Statement(Lexer::new("fn baz ( hi: (), what: (), ) -> Bool { return hi == what; }")).is_ok());
 }
-*/

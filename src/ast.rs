@@ -81,7 +81,7 @@ pub enum Ast<'a> {
     },
     Let {
         name: &'a str,
-        ty: Type,
+        ty: Type<'a>,
         expr: Expr<'a>
     },
     IfElse {
@@ -91,7 +91,7 @@ pub enum Ast<'a> {
     },
     For {
         var: &'a str,
-        ty: Type,
+        ty: Type<'a>,
         over: Expr<'a>,
         block: Vec<Ast<'a>>,
     },
@@ -102,15 +102,14 @@ pub enum Ast<'a> {
     Return(Option<Expr<'a>>),
     Function {
         name: &'a str,
-        args: Vec<(&'a str, Type)>,
-        ret: Type,
+        args: Vec<(&'a str, Type<'a>)>,
+        ret: Type<'a>,
         body: Vec<Ast<'a>>,
     },
 }
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum Type {
-    I64,
+pub enum Type<'a> {
+    Ident(&'a str),
     Unit,
-    Bool,
 }
