@@ -1,0 +1,26 @@
+// Let's test out a comment!
+fn main(argc: I32, argv: String []) -> I32 {
+  if (argc < 2) {
+    print("you need to pass an argument");
+  } else {  // This comment is in a line!
+    print(/* This is an inline comment */ argv[1]);
+  }
+}
+
+// We need to perform an operator stress test
+// Let's test the two-character operators
+fn test_it_out() -> Bool {
+  let x: I64 = 0;
+  if ((True == False) != True) {
+    x += 1;
+  }
+  x *= 10;
+  x /= 2;
+  if (x <= 100) {
+    x -= 100;
+    assert(x <= 0);
+  } else {
+    return False;
+  }
+  return True;
+}

@@ -64,6 +64,7 @@ pub enum Token<'a> {
     Ident(&'a str),
     Int(i64),
     Char(char),
+    Error,
 }
 
 struct Lookahead<'a> {
@@ -252,7 +253,24 @@ impl<'a> Iterator for Lexer<'a> {
                 Some('!') => compound_assignment!(Token::BangEquals,  Token::Char('!')),
                 Some('+') => compound_assignment!(Token::PlusEquals, Token::Plus),
                 Some('*') => compound_assignment!(Token::StarEquals, Token::Star),
-                Some('/') => compound_assignment!(Token::SlashEquals, Token::Slash),
+                Some('/') => lex_tree! {
+                    '=' => advance_return!(Token::SlashEquals),
+                    '/' => while self.chars.next().map(|x| x != '\n').unwrap_or(false) {},
+                    '*' => {
+                        // We don't want /*/ to be a full comment
+                        self.chars.next();
+                        loop {
+                            match self.chars.next() {
+                                Some('*') => {
+                                    if self.chars.next() == Some('/') { break; }
+                                }
+                                Some(_) => {}
+                                None => return Some(Token::Error)
+                            }
+                        }
+                    };
+                    default Token::Slash
+                },
                 Some('%') => compound_assignment!(Token::PercentEquals, Token::Percent),
                 Some('<') => lex_tree! {
                     '=' => advance_return!(Token::LessThanEquals),
@@ -358,4 +376,12 @@ fn test_large_lex() {
         CloseCurly,
     ];
     assert_eq!(Lexer::new(code).collect::<Vec<_>>(), expected);
+}
+
+#[test]
+fn test_lex_comments() {
+    assert_eq!(Lexer::new("in in /* hi */ in").collect::<Vec<_>>(),
+               vec![Token::In, Token::In, Token::In]);
+    assert_eq!(Lexer::new("// hello").collect::<Vec<_>>(), vec![]);
+    assert_eq!(Lexer::new("/*/ in in").collect::<Vec<_>>(), vec![Token::Error]);
 }
