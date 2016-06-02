@@ -2,7 +2,7 @@ use std::str::FromStr;
 use ast::{Ast, Expr, Operator, Type};
 use lexer::Token;
 
-grammar<'input>;
+grammar<'input>["LALR(1)"];
 
 extern {
     enum Token<'input> {
@@ -71,9 +71,7 @@ extern {
     }
 }
 
-pub File: Vec<Ast<'input>> = {
-    Statement*
-};
+pub File: Vec<Ast<'input>> = Statement*;
 
 Comma<X>: Vec<X> = {
     <v:(<X> ",")*> <e:X?> => match e {
@@ -86,21 +84,116 @@ Comma<X>: Vec<X> = {
     }
 };
 
+pub Type: Type<'input> = {
+    "Ident" => Type::Ident(<>),
+    "(" ")" => Type::Unit,
+};
+
+Block = "{" <Statement*> "}";
+// Vec<Ast<'input>>
+
+TypedIdent = <"Ident"> ":" <Type>;
+// : (&'input str, Type<'input>) 
+
+// Statements ///////////////////////////////////////////////////////////////////
 pub Statement: Ast<'input> = {
     Let,
     Assignment,
     IfElse,
-    <Expr> ";" => Ast::Expr(<>),
     For,
     While,
     Return,
     Function,
+    <Expr> ";" => Ast::Expr(<>),
 };
 
-Assignment: Ast<'input> = {
-    <l:Primary> <op:AssignmentOp> <r:Expr> ";" => Ast::Assign { lhs: l, op: op, rhs: r },
+Let: Ast<'input> =
+    "let" <name:"Ident"> ":" <ty:Type> "=" <expr:Expr> ";"
+        => Ast::Let { name: name, ty: ty, expr: expr };
+
+Assignment: Ast<'input> = <l:Primary> <op:AssignmentOp> <r:Expr> ";" => Ast::Assign { lhs: l, op: op, rhs: r };
+
+IfElse: Ast<'input> = {
+    "if" "(" <cond:Expr> ")" <then:Block> => Ast::IfElse { cond: cond, then: then, else_: None },
+    "if" "(" <cond:Expr> ")" <then:Block> "else" <ifelse:IfElse>
+        => Ast::IfElse { cond: cond, then: then, else_: Some(vec![ifelse]) },
+    "if" "(" <cond:Expr> ")" <then:Block> "else" <else_:Block>
+        => Ast::IfElse { cond: cond, then: then, else_: Some(else_) },
 };
 
+For: Ast<'input> =
+    "for" <var:"Ident"> ":" <ty:Type> "in" <over:Expr> <block:Block>
+        => Ast::For { var: var, ty: ty, over: over, block: block };
+
+While: Ast<'input> = "while" "(" <cond:Expr> ")" <block:Block> => Ast::While { cond: cond, block: block };
+
+Return: Ast<'input> = "return" <Expr?> ";" => Ast::Return(<>);
+
+Function: Ast<'input> =
+    "fn" <name:"Ident"> "(" <args:Comma<TypedIdent>> ")" <ret:("->" <Type>)?> <body:Block>
+        => Ast::Function { name: name, args: args, ret: ret.unwrap_or(Type::Unit), body: body };
+
+// Expressions //////////////////////////////////////////////////////////////////
+pub Expr: Expr<'input> = {
+    <l:Expr> "or" <r:And> => Expr::make_binop(l, Operator::Or, r),
+    And,
+};
+
+And: Expr<'input> = {
+    <l:And> "and" <r:Equality> => Expr::make_binop(l, Operator::And, r),
+    Equality,
+};
+
+Equality: Expr<'input> = {
+    Equality EqualOp Relation => Expr::make_binop(<>),
+    Relation,
+};
+
+Relation: Expr<'input> = {
+    Relation RelOp Range => Expr::make_binop(<>),
+    Range,
+};
+
+Range: Expr<'input> = {
+    <l:Shift> ".." <r:Shift> => Expr::make_binop(l, Operator::Range, r),
+    Shift,
+};
+
+Shift: Expr<'input> = {
+    Shift ShiftOp Sum => Expr::make_binop(<>),
+    Sum,
+};
+
+Sum: Expr<'input> = {
+    Sum SumOp Product => Expr::make_binop(<>),
+    Product,
+};
+
+Product: Expr<'input> = {
+    Product ProductOp Unary => Expr::make_binop(<>),
+    Unary,
+};
+
+Unary: Expr<'input> = {
+    UnaryOp Unary => Expr::make_unop(<>),
+    Connection,
+};
+
+Connection: Expr<'input> = {
+    <obj:Connection> "." <item:"Ident"> => Expr::GetItem { obj: Box::new(obj), item: item },
+    <obj:Connection> "->" <item:"Ident"> => Expr::GetItem { obj: Box::new(Expr::make_unop(Deref, obj)), item: item },
+    <obj:Connection> "[" <idx:Expr> "]" => Expr::Subscript { obj: Box::new(obj), idx: Box::new(idx) },
+    <func:Connection> "(" <args:Comma<Expr>> ")" => Expr::Call { func: Box::new(func), args: args },
+    Primary,
+};
+
+Primary: Expr<'input> = {
+    "(" <Expr> ")",
+    "Ident" => Expr::Ident(<>),
+    "Int" => Expr::Int(<>),
+};
+
+// Operators ////////////////////////////////////////////////////////////////////
 use ast::Operator::*;
 AssignmentOp: Operator = {
     "=" => Assign,
@@ -116,76 +209,9 @@ AssignmentOp: Operator = {
     "|=" => OrAssign,
 };
 
-pub Type: Type<'input> = {
-    "Ident" => Type::Ident(<>),
-    "(" ")" => Type::Unit,
-};
-
-Let: Ast<'input> = {
-    "let" <name:"Ident"> ":" <ty:Type> "=" <expr:Expr> ";" => Ast::Let { name: name, ty: ty, expr: expr },
-};
-
-IfElse: Ast<'input> = {
-    "if" "(" <cond:Expr> ")" <then:Block> => Ast::IfElse { cond: cond, then: then, else_: None },
-    "if" "(" <cond:Expr> ")" <then:Block> "else" <ifelse:IfElse> =>
-        Ast::IfElse { cond: cond, then: then, else_: Some(vec![ifelse]) },
-    "if" "(" <cond:Expr> ")" <then:Block> "else" <else_:Block> =>
-        Ast::IfElse { cond: cond, then: then, else_: Some(else_) },
-};
-
-Block: Vec<Ast<'input>> = {
-    "{" <Statement*> "}"
-};
-
-For: Ast<'input> = {
-    "for" <var:"Ident"> ":" <ty:Type> "in" <over:Expr> <block:Block> =>
-        Ast::For { var: var, ty: ty, over: over, block: block },
-};
-
-While: Ast<'input> = {
-    "while" "(" <cond:Expr> ")" <block:Block> => Ast::While { cond: cond, block: block },
-};
-
-Return: Ast<'input> = {
-    "return" <Expr?> ";" => Ast::Return(<>),
-};
-
-Function: Ast<'input> = {
-    "fn" <name:"Ident"> "(" <args:Comma<TypedIdent>> ")" <ret:("->" <Type>)?> <body:Block> =>
-        Ast::Function { name: name, args: args, ret: ret.unwrap_or(Type::Unit), body: body },
-};
-
-TypedIdent: (&'input str, Type<'input>) = {
-    <"Ident"> ":" <Type>,
-};
-
-pub Expr: Expr<'input> = {
-    Or
-};
-
-Or: Expr<'input> = {
-    <l:Or> "or" <r:And> => Expr::make_binop(l, Operator::Or, r),
-    And,
-};
-
-And: Expr<'input> = {
-    <l:And> "and" <r:Equality> => Expr::make_binop(l, Operator::And, r),
-    Equality,
-};
-
-Equality: Expr<'input> = {
-    Equality EqualOp Relation => Expr::make_binop(<>),
-    Relation,
-};
-
 EqualOp: Operator = {
     "==" => Equal,
     "!=" => NotEqual,
-};
-
-Relation: Expr<'input> = {
-    Relation RelOp Range => Expr::make_binop(<>),
-    Range,
 };
 
 RelOp: Operator = {
@@ -195,34 +221,14 @@ RelOp: Operator = {
     ">=" => GTE,
 };
 
-Range: Expr<'input> = {
-    <l:Shift> ".." <r:Shift> => Expr::make_binop(l, Operator::Range, r),
-    Shift,
-};
-
-Shift: Expr<'input> = {
-    Shift ShiftOp Sum => Expr::make_binop(<>),
-    Sum,
-};
-
 ShiftOp: Operator = {
     "<<" => ShiftLeft,
     ">>" => ShiftRight,
 };
 
-Sum: Expr<'input> = {
-    Sum SumOp Product => Expr::make_binop(<>),
-    Product,
-};
-
 SumOp: Operator = {
     "+" => Add,
     "-" => Sub,
-};
-
-Product: Expr<'input> = {
-    Product ProductOp Unary => Expr::make_binop(<>),
-    Unary,
 };
 
 ProductOp: Operator = {
@@ -231,32 +237,9 @@ ProductOp: Operator = {
     "%" => Mod,
 };
 
-Unary: Expr<'input> = {
-    UnaryOp Unary => Expr::make_unop(<>),
-    Connection,
-};
-
 UnaryOp: Operator = {
     "not" => Not,
     "~" => BitNot,
     "*" => Deref,
     "&" => Address,
-};
-
-Connection: Expr<'input> = {
-    <obj:Connection> "." <item:"Ident"> => Expr::GetItem { obj: Box::new(obj), item: item },
-    <obj:Connection> "->" <item:"Ident"> => Expr::GetItem { obj: Box::new(Expr::make_unop(Deref, obj)), item: item },
-    <obj:Connection> "[" <idx:Expr> "]" => Expr::Subscript { obj: Box::new(obj), idx: Box::new(idx) },
-    Call,
-    Primary,
-};
-
-pub Call: Expr<'input> = {
-    <func:Connection> "(" <args:Comma<Expr>> ")" => Expr::Call { func: Box::new(func), args: args },
-};
-
-Primary: Expr<'input> = {
-    "(" <Expr> ")",
-    "Ident" => Expr::Ident(<>),
-    "Int" => Expr::Int(<>),
 };
