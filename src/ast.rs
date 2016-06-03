@@ -38,6 +38,8 @@ pub enum Expr<'a> {
     Int(i64),
     Float(f64),
     Ident(&'a str),
+    String(&'a str),
+    Char(char),
     Binop {
         lhs: Box<Expr<'a>>,
         op: Operator,

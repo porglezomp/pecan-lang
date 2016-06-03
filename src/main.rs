@@ -204,3 +204,12 @@ fn test_parse_function() {
     assert!(parse_Statement(Lexer::new("fn foo() {}")).is_ok());
     assert!(parse_Statement(Lexer::new("fn baz ( hi: (), what: (), ) -> Bool { return hi == what; }")).is_ok());
 }
+
+#[test]
+fn test_parse_literals() {
+    use ast::Expr;
+    use parser::parse_Expr;
+
+    assert_eq!(parse_Expr(Lexer::new(r#""Hello, World!""#)).unwrap(), Expr::String("Hello, World!"));
+    assert_eq!(parse_Expr(Lexer::new("'''")).unwrap(), Expr::Char('\''));
+}

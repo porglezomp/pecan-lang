@@ -64,6 +64,8 @@ pub enum Token<'a> {
     Ident(&'a str),
     Int(i64),
     Char(char),
+    String(&'a str),
+    UnexpectedChar(char),
     Error,
 }
 
@@ -249,8 +251,8 @@ impl<'a> Iterator for Lexer<'a> {
                     default Token::Minus
                 },
                 Some('&') => compound_assignment!(Token::AndEquals, Token::Ampersand),
-                Some('=') => compound_assignment!(Token::EqualsEquals,     Token::Equals),
-                Some('!') => compound_assignment!(Token::BangEquals,  Token::Char('!')),
+                Some('=') => compound_assignment!(Token::EqualsEquals, Token::Equals),
+                Some('!') => compound_assignment!(Token::BangEquals,  Token::UnexpectedChar('!')),
                 Some('+') => compound_assignment!(Token::PlusEquals, Token::Plus),
                 Some('*') => compound_assignment!(Token::StarEquals, Token::Star),
                 Some('/') => lex_tree! {
@@ -282,13 +284,36 @@ impl<'a> Iterator for Lexer<'a> {
                     '>' => compound_assignment!(Token::GreaterThanGreaterThanEquals, Token::GreaterThanGreaterThan);
                     default Token::GreaterThan
                 },
-                Some('^') => compound_assignment!(Token::CaratEquals, Token::Char('^')),
-                Some('|') => compound_assignment!(Token::PipeEquals, Token::Char('|')),
+                Some('^') => compound_assignment!(Token::CaratEquals, Token::UnexpectedChar('^')),
+                Some('|') => compound_assignment!(Token::PipeEquals, Token::UnexpectedChar('|')),
                 Some('.') => lex_tree! {
                     '.' => advance_return!(Token::DotDot);
                     default Token::Dot
                 },
-                Some(c) => return Some(Token::Char(c)),
+                Some('"') => {
+                    // TODO: Handle escaped characters
+                    self.chars.next();
+                    let start_pos = self.chars.peek_pos().expect("start index");
+                    while self.chars.peek().map(|x| x != '"').unwrap_or(false) {
+                        self.chars.next();
+                    }
+                    if self.chars.peek() != Some('"') {
+                        return Some(Token::Error);
+                    }
+                    let end_pos = self.chars.peek_pos().expect("end index");
+                    self.chars.next();
+                    return Some(Token::String(&self.chars.as_str()[start_pos..end_pos]));
+                },
+                Some('\'') => {
+                    self.chars.next();
+                    let value = self.chars.next();
+                    let expect = self.chars.next();
+                    if expect != Some('\'') {
+                        return Some(Token::Error);
+                    }
+                    return Some(Token::Char(value.unwrap()));
+                },
+                Some(c) => advance_return!(Token::UnexpectedChar(c)),
                 None => return None,
             }
         }
@@ -384,4 +409,21 @@ fn test_lex_comments() {
                vec![Token::In, Token::In, Token::In]);
     assert_eq!(Lexer::new("// hello").collect::<Vec<_>>(), vec![]);
     assert_eq!(Lexer::new("/*/ in in").collect::<Vec<_>>(), vec![Token::Error]);
+}
+
+#[test]
+fn test_lex_strings() {
+    assert_eq!(Lexer::new(r#""Hello, World!""#).collect::<Vec<_>>(),
+               vec![Token::String("Hello, World!")]);
+    assert_eq!(Lexer::new(r#"print("Hello, World!");"#).collect::<Vec<_>>(),
+               vec![Token::Ident("print"), Token::OpenParen, Token::String("Hello, World!"),
+                    Token::CloseParen, Token::Semicolon]);
+}
+
+#[test]
+fn test_lex_char() {
+    assert_eq!(Lexer::new("'x'").collect::<Vec<_>>(), vec![Token::Char('x')]);
+    assert_eq!(Lexer::new("'''").collect::<Vec<_>>(), vec![Token::Char('\'')]);
+    assert_eq!(Lexer::new("''").collect::<Vec<_>>(), vec![Token::Error]);
+    assert_eq!(Lexer::new("'hi'").collect::<Vec<_>>(), vec![Token::Error, Token::Error]);
 }

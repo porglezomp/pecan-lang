@@ -68,6 +68,8 @@ extern {
 
         "Ident" => Token::Ident(<&'input str>),
         "Int" => Token::Int(<i64>),
+        "String" => Token::String(<&'input str>),
+        "Char" => Token::Char(<char>),
     }
 }
 
@@ -191,6 +193,8 @@ Primary: Expr<'input> = {
     "(" <Expr> ")",
     "Ident" => Expr::Ident(<>),
     "Int" => Expr::Int(<>),
+    "String" => Expr::String(<>),
+    "Char" => Expr::Char(<>),
 };
 
 // Operators ////////////////////////////////////////////////////////////////////
