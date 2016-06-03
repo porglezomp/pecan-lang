@@ -1,9 +1,9 @@
 // Let's test out a comment!
-fn main(argc: I32, argv: String []) -> I32 {
-  if (argc < 2) {
-    print("you need to pass an argument");
+fn main(args: [String]) -> I32 {
+  if (args.len < 2) {
+    print("You need to pass an argument!");
   } else {  // This comment is in a line!
-    print(/* This is an inline comment */ argv[1]);
+    print(args[1]);
   }
 }
 
@@ -12,7 +12,7 @@ fn main(argc: I32, argv: String []) -> I32 {
 fn test_it_out() -> Bool {
   let x: I64 = 0;
   if ((True == False) != True) {
-    x += 1;
+    /* This is an inline comment */ x += 1;
   }
   x *= 10;
   x /= 2;
