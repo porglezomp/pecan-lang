@@ -20,8 +20,10 @@ fn main() {
         return;
     }
     let lexer = Lexer::new(buf.as_str());
-    let parse_result = parser::parse_File(lexer);
-    println!("{:?}", parse_result);
+    match parser::parse_File(lexer) {
+        Ok(ast) => println!("{:?}", ast),
+        Err(e) => println!("Error parsing: {:?}", e),
+    }
 }
 
 #[test]
@@ -212,4 +214,29 @@ fn test_parse_literals() {
 
     assert_eq!(parse_Expr(Lexer::new(r#""Hello, World!""#)).unwrap(), Expr::String("Hello, World!"));
     assert_eq!(parse_Expr(Lexer::new("'''")).unwrap(), Expr::Char('\''));
+}
+
+#[test]
+fn test_parse_type() {
+    use ast::{Ast, Expr, Type};
+    use parser::parse_Statement;
+
+    assert_eq!(parse_Statement(Lexer::new("let _: I32 = _;")).unwrap(),
+               Ast::Let {
+                   name: "_",
+                   ty: Type::Ident("I32"),
+                   expr: Expr::Ident("_"),
+               });
+    assert_eq!(parse_Statement(Lexer::new("let _: &I32 = _;")).unwrap(),
+               Ast::Let {
+                   name: "_",
+                   ty: Type::Pointer(Box::new(Type::Ident("I32"))),
+                   expr: Expr::Ident("_"),
+               });
+    assert_eq!(parse_Statement(Lexer::new("let _: [&Ast] = _;")).unwrap(),
+               Ast::Let {
+                   name: "_",
+                   ty: Type::Array(Box::new(Type::Pointer(Box::new(Type::Ident("Ast"))))),
+                   expr: Expr::Ident("_"),
+               });
 }

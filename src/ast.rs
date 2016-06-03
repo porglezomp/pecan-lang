@@ -112,6 +112,8 @@ pub enum Ast<'a> {
 
 #[derive(PartialEq, Eq, Debug)]
 pub enum Type<'a> {
+    Pointer(Box<Type<'a>>),
+    Array(Box<Type<'a>>),
     Ident(&'a str),
     Unit,
 }
