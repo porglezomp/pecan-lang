@@ -14,6 +14,7 @@ extern {
         "let" => Token::Let,
         "return" => Token::Return,
         "fn" => Token::Fn,
+        "struct" => Token::Struct,
 
         "->" => Token::Arrow,
 
@@ -108,6 +109,7 @@ pub Statement: Ast<'input> = {
     While,
     Return,
     Function,
+    Struct,
     <Expr> ";" => Ast::Expr(<>),
 };
 
@@ -136,6 +138,10 @@ Return: Ast<'input> = "return" <Expr?> ";" => Ast::Return(<>);
 Function: Ast<'input> =
     "fn" <name:"Ident"> "(" <args:Comma<TypedIdent>> ")" <ret:("->" <Type>)?> <body:Block>
         => Ast::Function { name: name, args: args, ret: ret.unwrap_or(Type::Unit), body: body };
+
+Struct: Ast<'input> =
+    "struct" <name:"Ident"> "{" <members:Comma<TypedIdent>> "}"
+        => Ast::Struct { name: name, members: members };
 
 // Expressions //////////////////////////////////////////////////////////////////
 pub Expr: Expr<'input> = {

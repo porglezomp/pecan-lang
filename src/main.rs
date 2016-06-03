@@ -240,3 +240,28 @@ fn test_parse_type() {
                    expr: Expr::Ident("_"),
                });
 }
+
+#[test]
+fn test_parse_struct() {
+    use ast::{Ast, Type};
+    use parser::parse_Statement;
+
+    assert_eq!(parse_Statement(Lexer::new("struct Foo {}")).unwrap(),
+               Ast::Struct { name: "Foo", members: vec![] });
+    assert_eq!(parse_Statement(Lexer::new("struct Vec2 {
+    x: F64,
+    y: F64,
+}")).unwrap(),
+               Ast::Struct {
+                   name: "Vec2",
+                   members: vec![("x", Type::Ident("F64")), ("y", Type::Ident("F64"))]
+               });
+    assert_eq!(parse_Statement(Lexer::new("struct Person { name: String, friend: &Person }")).unwrap(),
+               Ast::Struct {
+                   name: "Person",
+                   members: vec![
+                       ("name", Type::Ident("String")),
+                       ("friend", Type::Pointer(Box::new(Type::Ident("Person")))),
+                   ]
+               });
+}

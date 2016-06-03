@@ -24,3 +24,10 @@ fn test_it_out() -> Bool {
   }
   return True;
 }
+
+struct Vec2 { x: F64, y: F64 }
+struct Vec3 { x: F64, y: F64, z: F64 }
+
+fn unit?(v: Vec2) -> Bool {
+    return (v.x * v.x + v.y + v.y).epsilon_equals(1);
+}
