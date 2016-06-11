@@ -382,7 +382,7 @@ fn test_large_lex() {
     let code = "fn fib(n: I64) -> I64 {
   let a: I64 = 0;
   let b: I64 = 1;
-  for i: I64 in 0..n {
+  for i: I64 in (0..n) {
     let c: I64 = a;
     a += b;
     b = c;
@@ -394,7 +394,7 @@ fn test_large_lex() {
         Fn, Ident("fib"), OpenParen, Ident("n"), Colon, Ident("I64"), CloseParen, Arrow, Ident("I64"), OpenCurly,
         Let, Ident("a"), Colon, Ident("I64"), Equals, Int(0), Semicolon,
         Let, Ident("b"), Colon, Ident("I64"), Equals, Int(1), Semicolon,
-        For, Ident("i"), Colon, Ident("I64"), In, Int(0), DotDot, Ident("n"), OpenCurly,
+        For, Ident("i"), Colon, Ident("I64"), In, OpenParen, Int(0), DotDot, Ident("n"), CloseParen, OpenCurly,
         Let, Ident("c"), Colon, Ident("I64"), Equals, Ident("a"), Semicolon,
         Ident("a"), PlusEquals, Ident("b"), Semicolon,
         Ident("b"), Equals, Ident("c"), Semicolon,
@@ -429,3 +429,4 @@ fn test_lex_char() {
     assert_eq!(Lexer::new("''").collect::<Vec<_>>(), vec![Token::Error]);
     assert_eq!(Lexer::new("'hi'").collect::<Vec<_>>(), vec![Token::Error, Token::Error]);
 }
+

@@ -164,8 +164,8 @@ fn test_parse_for() {
     use parser::parse_Statement;
 
     // TODO: Write more thorough tests
-    assert!(parse_Statement(Lexer::new("for i: I64 in 0..64 { }")).is_ok());
-    assert!(parse_Statement(Lexer::new("for x: I64 in items(hi) { print(x); }")).is_ok());
+    assert!(parse_Statement(Lexer::new("for i: I64 in (0..64) { }")).is_ok());
+    assert!(parse_Statement(Lexer::new("for x: I64 in (items(hi)) { print(x); }")).is_ok());
 }
 
 #[test]
@@ -196,7 +196,7 @@ fn test_parse_function() {
     assert!(parse_Statement(Lexer::new("fn fib(n: I64) -> I64 {
   let a: I64 = 0;
   let b: I64 = 1;
-  for i: I64 in 0..n {
+  for i: I64 in (0..n) {
     let c: I64 = a;
     a += b;
     b = c;

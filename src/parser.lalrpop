@@ -95,10 +95,8 @@ pub Type: Type<'input> = {
 };
 
 Block = "{" <Statement*> "}";
-// Vec<Ast<'input>>
 
 TypedIdent = <"Ident"> ":" <Type>;
-// : (&'input str, Type<'input>) 
 
 // Statements ///////////////////////////////////////////////////////////////////
 pub Statement: Ast<'input> = {
@@ -128,7 +126,7 @@ IfElse: Ast<'input> = {
 };
 
 For: Ast<'input> =
-    "for" <var:"Ident"> ":" <ty:Type> "in" <over:Expr> <block:Block>
+    "for" <var:"Ident"> ":" <ty:Type> "in" "(" <over:Expr> ")" <block:Block>
         => Ast::For { var: var, ty: ty, over: over, block: block };
 
 While: Ast<'input> = "while" "(" <cond:Expr> ")" <block:Block> => Ast::While { cond: cond, block: block };
