@@ -147,6 +147,7 @@ fn test_parse_let() {
     assert!(parse_Statement(Lexer::new("let foo: I64 = 42;")).is_ok());
     assert!(parse_Statement(Lexer::new("let bar: Bool = 123 > 124;")).is_ok());
     assert!(parse_Statement(Lexer::new("let baz: () = qux();")).is_ok());
+    assert!(parse_Statement(Lexer::new("let mut i: I64 = 0;")).is_ok());
 }
 
 #[test]
@@ -217,7 +218,7 @@ fn test_parse_literals() {
     assert_eq!(parse_Expr(Lexer::new("Vec2 { .x = 0, .y = 1 }")).unwrap(),
                Expr::Struct { name: "Vec2", items: vec![("x", Expr::Int(0)), ("y", Expr::Int(1))]});
     assert_eq!(parse_Expr(Lexer::new("[1, 2, 3]")).unwrap(),
-               Expr::List(vec![Expr::Int(0), Expr::Int(1), Expr::Int(2)]));
+               Expr::List(vec![Expr::Int(1), Expr::Int(2), Expr::Int(3)]));
 }
 
 #[test]
@@ -228,18 +229,21 @@ fn test_parse_type() {
     assert_eq!(parse_Statement(Lexer::new("let _: I32 = _;")).unwrap(),
                Ast::Let {
                    name: "_",
+                   mutable: false,
                    ty: Type::Ident("I32"),
                    expr: Expr::Ident("_"),
                });
     assert_eq!(parse_Statement(Lexer::new("let _: &I32 = _;")).unwrap(),
                Ast::Let {
                    name: "_",
+                   mutable: false,
                    ty: Type::Pointer(Box::new(Type::Ident("I32"))),
                    expr: Expr::Ident("_"),
                });
     assert_eq!(parse_Statement(Lexer::new("let _: [&Ast] = _;")).unwrap(),
                Ast::Let {
                    name: "_",
+                   mutable: false,
                    ty: Type::Array(Box::new(Type::Pointer(Box::new(Type::Ident("Ast"))))),
                    expr: Expr::Ident("_"),
                });

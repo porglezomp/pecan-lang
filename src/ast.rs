@@ -88,6 +88,7 @@ pub enum Ast<'a> {
     },
     Let {
         name: &'a str,
+        mutable: bool,
         ty: Type<'a>,
         expr: Expr<'a>
     },

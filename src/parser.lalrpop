@@ -12,6 +12,7 @@ extern {
         "in" => Token::In,
         "while" => Token::While,
         "let" => Token::Let,
+        "mut" => Token::Mut,
         "return" => Token::Return,
         "fn" => Token::Fn,
         "struct" => Token::Struct,
@@ -112,8 +113,8 @@ pub Statement: Ast<'input> = {
 };
 
 Let: Ast<'input> =
-    "let" <name:"Ident"> ":" <ty:Type> "=" <expr:Expr> ";"
-        => Ast::Let { name: name, ty: ty, expr: expr };
+    "let" <mutable:"mut"?> <name:"Ident"> ":" <ty:Type> "=" <expr:Expr> ";"
+        => Ast::Let { name: name, mutable: mutable.is_some(), ty: ty, expr: expr };
 
 Assignment: Ast<'input> = <l:Primary> <op:AssignmentOp> <r:Expr> ";" => Ast::Assign { lhs: l, op: op, rhs: r };
 
