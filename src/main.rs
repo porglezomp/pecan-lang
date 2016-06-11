@@ -216,6 +216,8 @@ fn test_parse_literals() {
     assert_eq!(parse_Expr(Lexer::new("'''")).unwrap(), Expr::Char('\''));
     assert_eq!(parse_Expr(Lexer::new("Vec2 { .x = 0, .y = 1 }")).unwrap(),
                Expr::Struct { name: "Vec2", items: vec![("x", Expr::Int(0)), ("y", Expr::Int(1))]});
+    assert_eq!(parse_Expr(Lexer::new("[1, 2, 3]")).unwrap(),
+               Expr::List(vec![Expr::Int(0), Expr::Int(1), Expr::Int(2)]));
 }
 
 #[test]

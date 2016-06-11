@@ -40,6 +40,7 @@ pub enum Expr<'a> {
     Ident(&'a str),
     String(&'a str),
     Char(char),
+    List(Vec<Expr<'a>>),
     Binop {
         lhs: Box<Expr<'a>>,
         op: Operator,

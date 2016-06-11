@@ -199,6 +199,7 @@ Primary: Expr<'input> = {
     "(" <Expr> ")",
     "Ident" => Expr::Ident(<>),
     <name:"Ident"> "{" <items:Comma<ItemAssignment>> "}" => Expr::Struct { name: name, items: items },
+    "[" <Comma<Expr>> "]" => Expr::List(<>),
     "Int" => Expr::Int(<>),
     "String" => Expr::String(<>),
     "Char" => Expr::Char(<>),
