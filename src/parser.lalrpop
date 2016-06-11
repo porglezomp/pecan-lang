@@ -198,10 +198,13 @@ Connection: Expr<'input> = {
 Primary: Expr<'input> = {
     "(" <Expr> ")",
     "Ident" => Expr::Ident(<>),
+    <name:"Ident"> "{" <items:Comma<ItemAssignment>> "}" => Expr::Struct { name: name, items: items },
     "Int" => Expr::Int(<>),
     "String" => Expr::String(<>),
     "Char" => Expr::Char(<>),
 };
+
+ItemAssignment = "." <"Ident"> "=" <Expr>;
 
 // Operators ////////////////////////////////////////////////////////////////////
 use ast::Operator::*;

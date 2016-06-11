@@ -61,6 +61,10 @@ pub enum Expr<'a> {
         func: Box<Expr<'a>>,
         args: Vec<Expr<'a>>,
     },
+    Struct {
+        name: &'a str,
+        items: Vec<(&'a str,  Expr<'a>)>,
+    },
 }
 
 impl<'a> Expr<'a> {

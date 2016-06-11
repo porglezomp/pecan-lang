@@ -32,6 +32,9 @@ fn unit?(v: Vec2) -> Bool {
     return (v.x * v.x + v.y + v.y).epsilon_equals(1);
 }
 
+let up: Vec2 = Vec2 { .x = 0, .y = 1 };
+let right: Vec2 = Vec2 { .x = 1, .y = 0, };
+
 fn fib(n: I64) -> I64 {
     let a: I64 = 0;
     let b: I64 = 1;
