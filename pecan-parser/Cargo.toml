@@ -1,7 +1,9 @@
 [package]
-name = "pecan-lang"
+name = "pecan-parser"
 version = "0.1.0"
 authors = ["Caleb Jones <code@calebjones.net>"]
+repository = "https://github.com/porglezomp/pecan-lang"
+keywords = ["parser", "pecan-lang"]
 build = "build.rs"
 
 [build-dependencies]
@@ -9,3 +11,7 @@ lalrpop = "0.11.0"
 
 [dependencies]
 lalrpop-util = "0.11.0"
+
+[[bin]]
+name = "pecan-parser"
+doc = false

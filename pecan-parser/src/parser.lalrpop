@@ -102,7 +102,7 @@ NoTrailingComma<X>: Vec<X> = {
     }
 };
 
-pub Type: Type<'input> = {
+Type: Type<'input> = {
     "&" <Type> => Type::Pointer(Box::new(<>)),
     "[" <Type> "]" => Type::Array(Box::new(<>)),
     "Ident" => Type::Ident(<>),

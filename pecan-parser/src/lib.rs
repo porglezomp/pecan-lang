@@ -1,35 +1,13 @@
-pub mod ast;
-pub mod lexer;
-pub mod parser;
+mod ast;
+mod lexer;
+mod parser;
 
-use lexer::Lexer;
-use std::fs::File;
-use std::io::Read;
-use std::env;
-
-fn main() {
-    let args: Vec<_> = env::args().collect();
-    if args.len() < 2 {
-        println!("Pass a filename as argument");
-        return;
-    }
-    let file = File::open(&args[1]);
-    let mut buf = String::new();
-    if let Err(e) = file.and_then(|mut f| f.read_to_string(&mut buf)) {
-        println!("Error reading file: {}", e);
-        return;
-    }
-    let lexer = Lexer::new(buf.as_str());
-    match parser::parse_File(lexer) {
-        Ok(ast) => println!("{:?}", ast),
-        Err(e) => println!("Error parsing: {:?}", e),
-    }
-}
+pub use ast::{Ast, Expr, Operator, Type, Case};
+pub use lexer::Lexer;
+pub use parser::{parse_Statement, parse_Expr, parse_File};
 
 #[test]
 fn test_parse_assignment() {
-    use parser::parse_Statement;
-    use ast::{Ast, Expr, Operator};
     assert_eq!(parse_Statement(Lexer::new("a = b;")).unwrap(),
                Ast::Assign {
                    lhs: Expr::Ident("a"),
@@ -52,8 +30,6 @@ fn test_parse_assignment() {
 
 #[test]
 fn test_parse_expressions() {
-    use parser::parse_Expr;
-    use ast::{Expr, Operator};
     assert_eq!(parse_Expr(Lexer::new("1 + 1 * 2 == 3")).unwrap(),
                Expr::make_binop(
                    Expr::make_binop(
@@ -141,7 +117,6 @@ fn test_parse_expressions() {
 
 #[test]
 fn test_precedence() {
-    use parser::parse_Expr;
     let pairs = vec![
         ("True or False and True", "True or (False and True)"),
         ("a or b and c or d", "a or (b and c) or d"),
@@ -157,8 +132,6 @@ fn test_precedence() {
 
 #[test]
 fn test_parse_let() {
-    use parser::parse_Statement;
-
     // TODO: Write more thorough tests
     assert!(parse_Statement(Lexer::new("let foo: I64 = 42;")).is_ok());
     assert!(parse_Statement(Lexer::new("let bar: Bool = 123 > 124;")).is_ok());
@@ -168,8 +141,6 @@ fn test_parse_let() {
 
 #[test]
 fn test_parse_if_else() {
-    use parser::parse_Statement;
-
     // TODO: Write more thorough tests
     assert!(parse_Statement(Lexer::new("if (True) { a; }")).is_ok());
     assert!(parse_Statement(Lexer::new("if (1 == 1) { a; } else { b; }")).is_ok());
@@ -178,8 +149,6 @@ fn test_parse_if_else() {
 
 #[test]
 fn test_parse_for() {
-    use parser::parse_Statement;
-
     // TODO: Write more thorough tests
     assert!(parse_Statement(Lexer::new("for i: I64 in (0..64) { }")).is_ok());
     assert!(parse_Statement(Lexer::new("for x: I64 in (items(hi)) { print(x); }")).is_ok());
@@ -187,8 +156,6 @@ fn test_parse_for() {
 
 #[test]
 fn test_parse_while() {
-    use parser::{parse_Statement, parse_File};
-
     // TODO: Write more thorough tests
     assert!(parse_Statement(Lexer::new("while (True) { }")).is_ok());
     assert!(parse_File(Lexer::new("let i: I64 = 0; while (i < 10) { i += 1; }")).is_ok());
@@ -196,8 +163,6 @@ fn test_parse_while() {
 
 #[test]
 fn test_parse_return() {
-    use parser::parse_Statement;
-
     // TODO: Write more thorough tests
     assert!(parse_Statement(Lexer::new("return;")).is_ok());
     assert!(parse_Statement(Lexer::new("return 1;")).is_ok());
@@ -206,8 +171,6 @@ fn test_parse_return() {
 
 #[test]
 fn test_parse_function() {
-    use parser::{parse_Statement};
-
     // TODO: Write more thorough tests
     assert!(parse_Statement(Lexer::new("fn hello(n: I64) {}")).is_ok());
     assert!(parse_Statement(Lexer::new("fn fib(n: I64) -> I64 {
@@ -226,9 +189,6 @@ fn test_parse_function() {
 
 #[test]
 fn test_parse_literals() {
-    use ast::Expr;
-    use parser::parse_Expr;
-
     assert_eq!(parse_Expr(Lexer::new(r#""Hello, World!""#)).unwrap(),
                Expr::String("Hello, World!"));
     assert_eq!(parse_Expr(Lexer::new("'''")).unwrap(),
@@ -243,9 +203,6 @@ fn test_parse_literals() {
 
 #[test]
 fn test_parse_type() {
-    use ast::{Ast, Expr, Type};
-    use parser::parse_Statement;
-
     assert_eq!(parse_Statement(Lexer::new("let _: I32 = _;")).unwrap(),
                Ast::Let {
                    name: "_",
@@ -278,9 +235,6 @@ fn test_parse_type() {
 
 #[test]
 fn test_parse_struct() {
-    use ast::{Ast, Type};
-    use parser::parse_Statement;
-
     assert_eq!(parse_Statement(Lexer::new("struct Foo {}")).unwrap(),
                Ast::Struct { name: "Foo", members: vec![] });
     assert_eq!(parse_Statement(Lexer::new("struct Vec2 {
@@ -303,9 +257,6 @@ fn test_parse_struct() {
 
 #[test]
 fn test_parse_enum() {
-    use ast::Ast;
-    use parser::parse_Statement;
-
     assert_eq!(parse_Statement(Lexer::new("enum Void {}")).unwrap(),
                Ast::Enum { name: "Void", variants: vec![] });
     assert_eq!(parse_Statement(Lexer::new("enum Bool { False, True }")).unwrap(),
@@ -314,9 +265,6 @@ fn test_parse_enum() {
 
 #[test]
 fn test_parse_flag() {
-    use ast::Ast;
-    use parser::parse_Statement;
-
     assert_eq!(parse_Statement(Lexer::new("flag Empty {}")).unwrap(),
                Ast::Flag { name: "Empty", variants: vec![] });
     assert_eq!(parse_Statement(Lexer::new("flag Features { Feature1, Feature2 }")).unwrap(),
@@ -325,9 +273,6 @@ fn test_parse_flag() {
 
 #[test]
 fn test_parse_switch() {
-    use ast::{Ast, Expr, Case};
-    use parser::parse_Statement;
-
     assert_eq!(parse_Statement(Lexer::new("switch (a) {}")).unwrap(),
                Ast::Switch { cond: Expr::Ident("a"), cases: vec![] });
     assert_eq!(parse_Statement(Lexer::new("switch (a) {
