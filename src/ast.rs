@@ -118,7 +118,11 @@ pub enum Ast<'a> {
     Struct {
         name: &'a str,
         members: Vec<(&'a str, Type<'a>)>,
-    }
+    },
+    Enum {
+        name: &'a str,
+        variants: Vec<&'a str>,
+    },
 }
 
 #[derive(PartialEq, Eq, Debug)]

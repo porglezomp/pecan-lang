@@ -16,6 +16,7 @@ extern {
         "return" => Token::Return,
         "fn" => Token::Fn,
         "struct" => Token::Struct,
+        "enum" => Token::Enum,
 
         "->" => Token::Arrow,
 
@@ -118,6 +119,7 @@ pub Statement: Ast<'input> = {
     Return,
     Function,
     Struct,
+    Enum,
     <Expr> ";" => Ast::Expr(<>),
 };
 
@@ -150,6 +152,10 @@ Function: Ast<'input> =
 Struct: Ast<'input> =
     "struct" <name:"Ident"> "{" <members:Comma<TypedIdent>> "}"
         => Ast::Struct { name: name, members: members };
+
+Enum: Ast<'input> =
+    "enum" <name:"Ident"> "{" <variants:Comma<"Ident">> "}"
+        => Ast::Enum { name: name, variants: variants };
 
 // Expressions //////////////////////////////////////////////////////////////////
 pub Expr: Expr<'input> = {

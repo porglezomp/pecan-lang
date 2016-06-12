@@ -12,6 +12,7 @@ pub enum Token<'a> {
     Return,
     Fn,
     Struct,
+    Enum,
 
     Arrow,
 
@@ -236,6 +237,7 @@ impl<'a> Iterator for Lexer<'a> {
                         "or" => Token::Or,
                         "not" => Token::Not,
                         "struct" => Token::Struct,
+                        "enum" => Token::Enum,
                         text => Token::Ident(text),
                     });
                 }

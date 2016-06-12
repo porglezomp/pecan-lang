@@ -284,3 +284,14 @@ fn test_parse_struct() {
                    ]
                });
 }
+
+#[test]
+fn test_parse_enum() {
+    use ast::Ast;
+    use parser::parse_Statement;
+
+    assert_eq!(parse_Statement(Lexer::new("enum Void {}")).unwrap(),
+               Ast::Enum { name: "Void", variants: vec![] });
+    assert_eq!(parse_Statement(Lexer::new("enum Bool { False, True }")).unwrap(),
+               Ast::Enum { name: "Bool", variants: vec!["False", "True"]});
+}
