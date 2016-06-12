@@ -108,6 +108,10 @@ pub enum Ast<'a> {
         cond: Expr<'a>,
         block: Vec<Ast<'a>>,
     },
+    Switch {
+        cond: Expr<'a>,
+        cases: Vec<Case<'a>>,
+    },
     Return(Option<Expr<'a>>),
     Function {
         name: &'a str,
@@ -132,4 +136,10 @@ pub enum Type<'a> {
     Ident(&'a str),
     Tuple(Vec<Type<'a>>),
     Unit,
+}
+
+#[derive(PartialEq, Debug)]
+pub enum Case<'a> {
+    Case { pattern: &'a str, body: Vec<Ast<'a>> },
+    Default(Vec<Ast<'a>>),
 }

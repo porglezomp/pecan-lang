@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use ast::{Ast, Expr, Operator, Type};
+use ast::{Ast, Expr, Operator, Type, Case};
 use lexer::Token;
 
 grammar<'input>["LALR(1)"];
@@ -11,6 +11,9 @@ extern {
         "for" => Token::For,
         "in" => Token::In,
         "while" => Token::While,
+        "switch" => Token::Switch,
+        "case" => Token::Case,
+        "default" => Token::Default,
         "let" => Token::Let,
         "mut" => Token::Mut,
         "return" => Token::Return,
@@ -116,6 +119,7 @@ pub Statement: Ast<'input> = {
     IfElse,
     For,
     While,
+    Switch,
     Return,
     Function,
     Struct,
@@ -142,6 +146,15 @@ For: Ast<'input> =
         => Ast::For { var: var, ty: ty, over: over, block: block };
 
 While: Ast<'input> = "while" "(" <cond:Expr> ")" <block:Block> => Ast::While { cond: cond, block: block };
+
+Switch: Ast<'input> =
+    "switch" "(" <cond:Expr> ")" "{" <cases:Case*> "}"
+        => Ast::Switch { cond: cond, cases: cases };
+
+Case: Case<'input> = {
+    "case" <pat:"Ident"> ":" <body:Statement+> => Case::Case { pattern: pat, body: body },
+    "default" ":" <Statement+> => Case::Default(<>),
+};
 
 Return: Ast<'input> = "return" <Expr?> ";" => Ast::Return(<>);
 

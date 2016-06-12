@@ -71,3 +71,14 @@ enum StateEnum {
     State2,
     State3,
 }
+
+fn cycle(state: StateEnum) -> StateEnum {
+    switch (state) {
+    case State1:
+        return State2;
+    case State2:
+        return State3;
+    case State3:
+        return State1;
+    }
+}

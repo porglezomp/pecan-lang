@@ -7,6 +7,9 @@ pub enum Token<'a> {
     For,
     In,
     While,
+    Switch,
+    Case,
+    Default,
     Let,
     Mut,
     Return,
@@ -229,6 +232,9 @@ impl<'a> Iterator for Lexer<'a> {
                         "for" => Token::For,
                         "in" => Token::In,
                         "while" => Token::While,
+                        "switch" => Token::Switch,
+                        "case" => Token::Case,
+                        "default" => Token::Default,
                         "let" => Token::Let,
                         "mut" => Token::Mut,
                         "return" => Token::Return,
@@ -433,4 +439,3 @@ fn test_lex_char() {
     assert_eq!(Lexer::new("''").collect::<Vec<_>>(), vec![Token::Error]);
     assert_eq!(Lexer::new("'hi'").collect::<Vec<_>>(), vec![Token::Error, Token::Error]);
 }
-

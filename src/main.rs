@@ -295,3 +295,28 @@ fn test_parse_enum() {
     assert_eq!(parse_Statement(Lexer::new("enum Bool { False, True }")).unwrap(),
                Ast::Enum { name: "Bool", variants: vec!["False", "True"]});
 }
+
+#[test]
+fn test_parse_switch() {
+    use ast::{Ast, Expr, Case};
+    use parser::parse_Statement;
+
+    assert_eq!(parse_Statement(Lexer::new("switch (a) {}")).unwrap(),
+               Ast::Switch { cond: Expr::Ident("a"), cases: vec![] });
+    assert_eq!(parse_Statement(Lexer::new("switch (a) {
+case Hi:
+    return 0;
+default:
+    return 1;
+}")).unwrap(),
+               Ast::Switch {
+                   cond: Expr::Ident("a"),
+                   cases: vec![
+                       Case::Case {
+                           pattern: "Hi",
+                           body: vec![Ast::Return(Some(Expr::Int(0)))]
+                       },
+                       Case::Default(vec![Ast::Return(Some(Expr::Int(1)))]),
+                   ]
+               });
+}
