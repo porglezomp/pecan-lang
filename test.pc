@@ -82,3 +82,23 @@ fn cycle(state: StateEnum) -> StateEnum {
         return State1;
     }
 }
+
+flag FeatureFlag {
+    Feature1,
+    Feature2,
+    Feature3,
+}
+
+fn a_thing(features: FeatureFlag) {
+    if (features & Feature1) {
+        // ...
+    }
+    if (features & Feature2) {
+        // ...
+    }
+    if (features & Feature3) {
+        // ...
+    }
+}
+
+a_thing(Feature1 | Feature3);

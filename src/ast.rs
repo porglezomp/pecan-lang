@@ -130,6 +130,10 @@ pub enum Ast<'a> {
         name: &'a str,
         variants: Vec<&'a str>,
     },
+    Flag {
+        name: &'a str,
+        variants: Vec<&'a str>,
+    },
 }
 
 #[derive(PartialEq, Eq, Debug)]

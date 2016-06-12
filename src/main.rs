@@ -313,6 +313,17 @@ fn test_parse_enum() {
 }
 
 #[test]
+fn test_parse_flag() {
+    use ast::Ast;
+    use parser::parse_Statement;
+
+    assert_eq!(parse_Statement(Lexer::new("flag Empty {}")).unwrap(),
+               Ast::Flag { name: "Empty", variants: vec![] });
+    assert_eq!(parse_Statement(Lexer::new("flag Features { Feature1, Feature2 }")).unwrap(),
+               Ast::Flag { name: "Features", variants: vec!["Feature1", "Feature2"]});
+}
+
+#[test]
 fn test_parse_switch() {
     use ast::{Ast, Expr, Case};
     use parser::parse_Statement;

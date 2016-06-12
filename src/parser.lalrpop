@@ -20,6 +20,7 @@ extern {
         "fn" => Token::Fn,
         "struct" => Token::Struct,
         "enum" => Token::Enum,
+        "flag" => Token::Flag,
 
         "->" => Token::Arrow,
 
@@ -125,6 +126,7 @@ pub Statement: Ast<'input> = {
     Function,
     Struct,
     Enum,
+    Flag,
     <Expr> ";" => Ast::Expr(<>),
 };
 
@@ -170,6 +172,10 @@ Struct: Ast<'input> =
 Enum: Ast<'input> =
     "enum" <name:"Ident"> "{" <variants:Comma<"Ident">> "}"
         => Ast::Enum { name: name, variants: variants };
+
+Flag: Ast<'input> =
+    "flag" <name:"Ident"> "{" <variants:Comma<"Ident">> "}"
+        => Ast::Flag { name: name, variants: variants };
 
 // Expressions //////////////////////////////////////////////////////////////////
 pub Expr: Expr<'input> = Range;
