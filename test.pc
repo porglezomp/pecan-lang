@@ -61,3 +61,7 @@ fn prime?(n: I64) -> Bool {
     }
     return True;
 }
+
+fn dup(n: I64) -> (I64, I64) {
+    return (n, n);
+}

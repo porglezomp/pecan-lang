@@ -41,6 +41,7 @@ pub enum Expr<'a> {
     String(&'a str),
     Char(char),
     List(Vec<Expr<'a>>),
+    Tuple(Vec<Expr<'a>>),
     Binop {
         lhs: Box<Expr<'a>>,
         op: Operator,
@@ -125,5 +126,6 @@ pub enum Type<'a> {
     Pointer(Box<Type<'a>>),
     Array(Box<Type<'a>>),
     Ident(&'a str),
+    Tuple(Vec<Type<'a>>),
     Unit,
 }

@@ -88,11 +88,20 @@ Comma<X>: Vec<X> = {
     }
 };
 
+NoTrailingComma<X>: Vec<X> = {
+    <v:(<X> ",")*> <e:X> => {
+        let mut v = v;
+        v.push(e);
+        v
+    }
+};
+
 pub Type: Type<'input> = {
     "&" <Type> => Type::Pointer(Box::new(<>)),
     "[" <Type> "]" => Type::Array(Box::new(<>)),
     "Ident" => Type::Ident(<>),
     "(" ")" => Type::Unit,
+    "(" <NoTrailingComma<Type>> ")" => Type::Tuple(<>),
 };
 
 Block = "{" <Statement*> "}";
@@ -197,7 +206,14 @@ Connection: Expr<'input> = {
 };
 
 Primary: Expr<'input> = {
-    "(" <Expr> ")",
+    "(" <NoTrailingComma<Expr>> ")" => {
+        let mut v = <>;
+        if v.len() == 1 {
+            v.pop().unwrap()
+        } else {
+            Expr::Tuple(v)
+        }
+    },
     "Ident" => Expr::Ident(<>),
     <name:"Ident"> "{" <items:Comma<ItemAssignment>> "}" => Expr::Struct { name: name, items: items },
     "[" <Comma<Expr>> "]" => Expr::List(<>),

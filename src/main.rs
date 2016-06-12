@@ -213,12 +213,16 @@ fn test_parse_literals() {
     use ast::Expr;
     use parser::parse_Expr;
 
-    assert_eq!(parse_Expr(Lexer::new(r#""Hello, World!""#)).unwrap(), Expr::String("Hello, World!"));
-    assert_eq!(parse_Expr(Lexer::new("'''")).unwrap(), Expr::Char('\''));
+    assert_eq!(parse_Expr(Lexer::new(r#""Hello, World!""#)).unwrap(),
+               Expr::String("Hello, World!"));
+    assert_eq!(parse_Expr(Lexer::new("'''")).unwrap(),
+               Expr::Char('\''));
     assert_eq!(parse_Expr(Lexer::new("Vec2 { .x = 0, .y = 1 }")).unwrap(),
                Expr::Struct { name: "Vec2", items: vec![("x", Expr::Int(0)), ("y", Expr::Int(1))]});
     assert_eq!(parse_Expr(Lexer::new("[1, 2, 3]")).unwrap(),
                Expr::List(vec![Expr::Int(1), Expr::Int(2), Expr::Int(3)]));
+    assert_eq!(parse_Expr(Lexer::new("(1, 2)")).unwrap(),
+               Expr::Tuple(vec![Expr::Int(1), Expr::Int(2)]));
 }
 
 #[test]
@@ -246,6 +250,13 @@ fn test_parse_type() {
                    mutable: false,
                    ty: Type::Array(Box::new(Type::Pointer(Box::new(Type::Ident("Ast"))))),
                    expr: Expr::Ident("_"),
+               });
+    assert_eq!(parse_Statement(Lexer::new("let _: (I64, I64) = (1, 2);")).unwrap(),
+               Ast::Let {
+                   name: "_",
+                   mutable: false,
+                   ty: Type::Tuple(vec![Type::Ident("I64"), Type::Ident("I64")]),
+                   expr: Expr::Tuple(vec![Expr::Int(1), Expr::Int(2)]),
                });
 }
 
