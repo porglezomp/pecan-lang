@@ -140,6 +140,22 @@ fn test_parse_expressions() {
 }
 
 #[test]
+fn test_precedence() {
+    use parser::parse_Expr;
+    let pairs = vec![
+        ("True or False and True", "True or (False and True)"),
+        ("a or b and c or d", "a or (b and c) or d"),
+        ("1 | 0 and 2 | 0", "(1 | 0) and (2 | 0)"),
+        ("1 | 2 & 3 ^ 4", "1 | ((2 & 3) ^ 4)"),
+        ("hello & 2 != 0", "(hello & 2) != 0"),
+    ];
+    for (unparen, paren) in pairs {
+        assert_eq!(parse_Expr(Lexer::new(unparen)).unwrap(),
+                   parse_Expr(Lexer::new(paren)).unwrap());
+    }
+}
+
+#[test]
 fn test_parse_let() {
     use parser::parse_Statement;
 

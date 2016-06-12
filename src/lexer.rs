@@ -63,7 +63,8 @@ pub enum Token<'a> {
     DotDot,
 
     Tilde,
-    // Bit...
+    Pipe,
+    Carat,
 
     Ampersand,
 
@@ -296,8 +297,8 @@ impl<'a> Iterator for Lexer<'a> {
                     '>' => compound_assignment!(Token::GreaterThanGreaterThanEquals, Token::GreaterThanGreaterThan);
                     default Token::GreaterThan
                 },
-                Some('^') => compound_assignment!(Token::CaratEquals, Token::UnexpectedChar('^')),
-                Some('|') => compound_assignment!(Token::PipeEquals, Token::UnexpectedChar('|')),
+                Some('^') => compound_assignment!(Token::CaratEquals, Token::Carat),
+                Some('|') => compound_assignment!(Token::PipeEquals, Token::Pipe),
                 Some('.') => lex_tree! {
                     '.' => advance_return!(Token::DotDot);
                     default Token::Dot

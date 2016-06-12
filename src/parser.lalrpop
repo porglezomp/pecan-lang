@@ -68,7 +68,8 @@ extern {
         ".." => Token::DotDot,
 
         "~" => Token::Tilde,
-        // Bit...
+        "|" => Token::Pipe,
+        "^" => Token::Carat,
 
         "&" => Token::Ampersand,
 
@@ -171,8 +172,15 @@ Enum: Ast<'input> =
         => Ast::Enum { name: name, variants: variants };
 
 // Expressions //////////////////////////////////////////////////////////////////
-pub Expr: Expr<'input> = {
-    <l:Expr> "or" <r:And> => Expr::make_binop(l, Operator::Or, r),
+pub Expr: Expr<'input> = Range;
+
+Range: Expr<'input> = {
+    <l:Or> ".." <r:Or> => Expr::make_binop(l, Operator::Range, r),
+    Or,
+};
+
+Or: Expr<'input> = {
+    <l:Or> "or" <r:And> => Expr::make_binop(l, Operator::Or, r),
     And,
 };
 
@@ -187,12 +195,22 @@ Equality: Expr<'input> = {
 };
 
 Relation: Expr<'input> = {
-    Relation RelOp Range => Expr::make_binop(<>),
-    Range,
+    Relation RelOp BitOr => Expr::make_binop(<>),
+    BitOr,
 };
 
-Range: Expr<'input> = {
-    <l:Shift> ".." <r:Shift> => Expr::make_binop(l, Operator::Range, r),
+BitOr: Expr<'input> = {
+    <l:BitOr> "|" <r:BitXor> => Expr::make_binop(l, Operator::BitOr, r),
+    BitXor,
+};
+
+BitXor: Expr<'input> = {
+    <l:BitXor> "^" <r:BitAnd> => Expr::make_binop(l, Operator::BitXor, r),
+    BitAnd,
+};
+
+BitAnd: Expr<'input> = {
+    <l:BitAnd> "&" <r:Shift> => Expr::make_binop(l, Operator::BitAnd, r),
     Shift,
 };
 
