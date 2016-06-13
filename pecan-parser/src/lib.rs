@@ -1,10 +1,14 @@
+#[macro_use] extern crate nom;
+
 mod ast;
 mod lexer;
 mod parser;
+mod nom_parser;
 
 pub use ast::{Ast, Expr, Operator, Type, Case};
 pub use lexer::Lexer;
 pub use parser::{parse_Statement, parse_Expr, parse_File};
+pub use nom_parser::program;
 
 #[test]
 fn test_parse_assignment() {
