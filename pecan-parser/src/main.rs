@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::Read;
 use std::env;
 
-use pecan_parser::{Lexer, parse_File};
+use pecan_parser::{Lexer, parse};
 
 fn main() {
     let args: Vec<_> = env::args().collect();
@@ -19,7 +19,7 @@ fn main() {
         return;
     }
     let lexer = Lexer::new(buf.as_str());
-    match parse_File(lexer) {
+    match parse(lexer) {
         Ok(ast) => println!("{:?}", ast),
         Err(e) => println!("Error parsing: {:?}", e),
     }

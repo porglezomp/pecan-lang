@@ -1,4 +1,4 @@
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub enum Operator {
     Assign,
     AddAssign,
@@ -36,7 +36,7 @@ pub enum Operator {
     Range,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Expr<'a> {
     Int(i64),
     Float(f64),
@@ -68,21 +68,28 @@ pub enum Expr<'a> {
     },
     Struct {
         name: &'a str,
-        items: Vec<(&'a str,  Expr<'a>)>,
+        items: Vec<(&'a str, Expr<'a>)>,
     },
 }
 
 impl<'a> Expr<'a> {
     pub fn make_binop(l: Expr<'a>, op: Operator, r: Expr<'a>) -> Expr<'a> {
-        Expr::Binop { lhs: Box::new(l), op: op, rhs: Box::new(r) }
+        Expr::Binop {
+            lhs: Box::new(l),
+            op: op,
+            rhs: Box::new(r),
+        }
     }
 
     pub fn make_unop(op: Operator, expr: Expr<'a>) -> Expr<'a> {
-        Expr::Unop { op: op, expr: Box::new(expr) }
+        Expr::Unop {
+            op: op,
+            expr: Box::new(expr),
+        }
     }
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Ast<'a> {
     Expr(Expr<'a>),
     Assign {
@@ -94,7 +101,7 @@ pub enum Ast<'a> {
         name: &'a str,
         mutable: bool,
         ty: Type<'a>,
-        expr: Expr<'a>
+        expr: Expr<'a>,
     },
     IfElse {
         cond: Expr<'a>,
@@ -136,7 +143,7 @@ pub enum Ast<'a> {
     },
 }
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Type<'a> {
     Pointer(Box<Type<'a>>),
     Array(Box<Type<'a>>),
@@ -145,8 +152,11 @@ pub enum Type<'a> {
     Unit,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Case<'a> {
-    Case { pattern: &'a str, body: Vec<Ast<'a>> },
+    Case {
+        pattern: &'a str,
+        body: Vec<Ast<'a>>,
+    },
     Default(Vec<Ast<'a>>),
 }

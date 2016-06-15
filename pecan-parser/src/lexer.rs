@@ -1,6 +1,6 @@
 use std::str::CharIndices;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum Token<'a> {
     If,
     Else,
@@ -141,16 +141,15 @@ macro_rules! make_num_lex {
             }
             if self.chars.peek().map(|x| x.is_alphabetic()).unwrap_or(false) { return None; }
             let end_pos = self.chars.peek_pos().expect("end index");
-            Some(Token::Int(i64::from_str_radix(&self.chars.as_str()[start_pos..end_pos], $base).expect(concat!("a valid base ", stringify!($base), " integer"))))
+            Some(Token::Int(i64::from_str_radix(&self.chars.as_str()[start_pos..end_pos], $base)
+                            .expect(concat!("a valid base ", stringify!($base), " integer"))))
         }
     }
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Lexer<'a> {
-        Lexer {
-            chars: Lookahead::new(input.char_indices()),
-        }
+        Lexer { chars: Lookahead::new(input.char_indices()) }
     }
 
     make_num_lex!(lex_hex, 'x', 16);
@@ -160,12 +159,15 @@ impl<'a> Lexer<'a> {
     fn lex_dec(&mut self) -> Option<Token<'a>> {
         let data = self.chars.as_str();
         let start_pos = self.chars.peek_pos().expect("start index");
-        while self.chars.peek().map(|x| x.is_digit(10)).unwrap_or(false) {
+        while self.chars.peek().map_or(false, |x| x.is_digit(10)) {
             self.chars.next();
         }
-        if self.chars.peek().map(|x| x.is_alphabetic()).unwrap_or(false) { return None; }
+        if self.chars.peek().map_or(false, |x| x.is_alphabetic()) {
+            return None;
+        }
         let end_pos = self.chars.peek_pos().expect("end index");
-        Some(Token::Int(i64::from_str_radix(&data[start_pos..end_pos], 10).expect("a valid base-10 integer")))
+        Some(Token::Int(i64::from_str_radix(&data[start_pos..end_pos], 10)
+            .expect("a valid base-10 integer")))
     }
 }
 
@@ -214,16 +216,16 @@ impl<'a> Iterator for Lexer<'a> {
                 }
                 Some(x) if x.is_digit(10) => return self.lex_dec(),
                 Some(x) if x.is_whitespace() => {
-                    while self.chars.peek().map(|x| x.is_whitespace()).unwrap_or(false) {
+                    while self.chars.peek().map_or(false, |x| x.is_whitespace()) {
                         self.chars.next();
                     }
                 }
                 Some(x) if x.is_alphabetic() || x == '_' => {
                     let start_pos = self.chars.peek_pos().expect("start index");
-                    while self.chars.peek().map(|x| x.is_alphanumeric() || x == '_').unwrap_or(false) {
+                    while self.chars.peek().map_or(false, |x| x.is_alphanumeric() || x == '_') {
                         self.chars.next();
                     }
-                    if self.chars.peek().map(|x| x == '?' || x == '!').unwrap_or(false) {
+                    if self.chars.peek().map_or(false, |x| x == '?' || x == '!') {
                         self.chars.next();
                     }
                     let end_pos = self.chars.peek_pos().expect("end index");
@@ -260,17 +262,20 @@ impl<'a> Iterator for Lexer<'a> {
                 Some('{') => advance_return!(Token::OpenCurly),
                 Some('}') => advance_return!(Token::CloseCurly),
                 Some('~') => advance_return!(Token::Tilde),
-                Some('-') => lex_tree! {
+                Some('-') => {
+                    lex_tree! {
                     '>' => advance_return!(Token::Arrow),
                     '=' => advance_return!(Token::MinusEquals);
                     default Token::Minus
-                },
+                }
+                }
                 Some('&') => compound_assignment!(Token::AndEquals, Token::Ampersand),
                 Some('=') => compound_assignment!(Token::EqualsEquals, Token::Equals),
-                Some('!') => compound_assignment!(Token::BangEquals,  Token::UnexpectedChar('!')),
+                Some('!') => compound_assignment!(Token::BangEquals, Token::UnexpectedChar('!')),
                 Some('+') => compound_assignment!(Token::PlusEquals, Token::Plus),
                 Some('*') => compound_assignment!(Token::StarEquals, Token::Star),
-                Some('/') => lex_tree! {
+                Some('/') => {
+                    lex_tree! {
                     '=' => advance_return!(Token::SlashEquals),
                     '/' => while self.chars.next().map(|x| x != '\n').unwrap_or(false) {},
                     '*' => {
@@ -287,7 +292,8 @@ impl<'a> Iterator for Lexer<'a> {
                         }
                     };
                     default Token::Slash
-                },
+                }
+                }
                 Some('%') => compound_assignment!(Token::PercentEquals, Token::Percent),
                 Some('<') => lex_tree! {
                     '=' => advance_return!(Token::LessThanEquals),
@@ -301,15 +307,17 @@ impl<'a> Iterator for Lexer<'a> {
                 },
                 Some('^') => compound_assignment!(Token::CaratEquals, Token::Carat),
                 Some('|') => compound_assignment!(Token::PipeEquals, Token::Pipe),
-                Some('.') => lex_tree! {
+                Some('.') => {
+                    lex_tree! {
                     '.' => advance_return!(Token::DotDot);
                     default Token::Dot
-                },
+                }
+                }
                 Some('"') => {
                     // TODO: Handle escaped characters
                     self.chars.next();
                     let start_pos = self.chars.peek_pos().expect("start index");
-                    while self.chars.peek().map(|x| x != '"').unwrap_or(false) {
+                    while self.chars.peek().map_or(false, |x| x != '"') {
                         self.chars.next();
                     }
                     if self.chars.peek() != Some('"') {
@@ -318,7 +326,7 @@ impl<'a> Iterator for Lexer<'a> {
                     let end_pos = self.chars.peek_pos().expect("end index");
                     self.chars.next();
                     return Some(Token::String(&self.chars.as_str()[start_pos..end_pos]));
-                },
+                }
                 Some('\'') => {
                     self.chars.next();
                     let value = self.chars.next();
@@ -327,7 +335,7 @@ impl<'a> Iterator for Lexer<'a> {
                         return Some(Token::Error);
                     }
                     return Some(Token::Char(value.unwrap()));
-                },
+                }
                 Some(c) => advance_return!(Token::UnexpectedChar(c)),
                 None => return None,
             }
@@ -423,7 +431,8 @@ fn test_lex_comments() {
     assert_eq!(Lexer::new("in in /* hi */ in").collect::<Vec<_>>(),
                vec![Token::In, Token::In, Token::In]);
     assert_eq!(Lexer::new("// hello").collect::<Vec<_>>(), vec![]);
-    assert_eq!(Lexer::new("/*/ in in").collect::<Vec<_>>(), vec![Token::Error]);
+    assert_eq!(Lexer::new("/*/ in in").collect::<Vec<_>>(),
+               vec![Token::Error]);
 }
 
 #[test]
@@ -431,14 +440,20 @@ fn test_lex_strings() {
     assert_eq!(Lexer::new(r#""Hello, World!""#).collect::<Vec<_>>(),
                vec![Token::String("Hello, World!")]);
     assert_eq!(Lexer::new(r#"print("Hello, World!");"#).collect::<Vec<_>>(),
-               vec![Token::Ident("print"), Token::OpenParen, Token::String("Hello, World!"),
-                    Token::CloseParen, Token::Semicolon]);
+               vec![Token::Ident("print"),
+                    Token::OpenParen,
+                    Token::String("Hello, World!"),
+                    Token::CloseParen,
+                    Token::Semicolon]);
 }
 
 #[test]
 fn test_lex_char() {
-    assert_eq!(Lexer::new("'x'").collect::<Vec<_>>(), vec![Token::Char('x')]);
-    assert_eq!(Lexer::new("'''").collect::<Vec<_>>(), vec![Token::Char('\'')]);
+    assert_eq!(Lexer::new("'x'").collect::<Vec<_>>(),
+               vec![Token::Char('x')]);
+    assert_eq!(Lexer::new("'''").collect::<Vec<_>>(),
+               vec![Token::Char('\'')]);
     assert_eq!(Lexer::new("''").collect::<Vec<_>>(), vec![Token::Error]);
-    assert_eq!(Lexer::new("'hi'").collect::<Vec<_>>(), vec![Token::Error, Token::Error]);
+    assert_eq!(Lexer::new("'hi'").collect::<Vec<_>>(),
+               vec![Token::Error, Token::Error]);
 }
